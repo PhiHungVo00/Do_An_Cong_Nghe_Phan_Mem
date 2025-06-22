@@ -20,6 +20,13 @@ import {
   CardContent,
   Divider,
   Button,
+  IconButton,
+  Slider,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -27,11 +34,27 @@ import {
   FilterList as FilterIcon,
   Sort as SortIcon,
   LocalOffer as LocalOfferIcon,
+  Favorite,
+  Star,
+  ExpandMore,
+  Clear,
 } from '@mui/icons-material';
-import ProductCard from '../components/home/ProductCard';
-import { products as allProducts, Product } from '../data/products';
 import { useSnackbar } from 'notistack';
 import { useCart } from '../contexts/CartContext';
+import { productAPI } from '../services/api';
+import { styled } from '@mui/material/styles';
+
+const StyledProductCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'all 0.3s ease',
+  cursor: 'pointer',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
 
 // Định nghĩa các danh mục và tiêu đề
 const categoryDetails = {
@@ -73,73 +96,98 @@ const Products: React.FC = () => {
   const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
   const { addToCart } = useCart();
-  const [products, setProducts] = useState<Product[]>([]);
+  
+  // State cho dữ liệu từ API
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // State cho filter và pagination
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [sortBy, setSortBy] = useState('popular');
   const [searchQuery, setSearchQuery] = useState('');
-  const [priceRange, setPriceRange] = useState('all');
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [priceRange, setPriceRange] = useState<string>('all');
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 12;
 
+  // Lấy search query từ URL
   useEffect(() => {
-    setLoading(true);
-    let filteredProducts = [...allProducts];
-
-    // Lọc theo danh mục
-    if (categoryId && categoryId !== 'all') {
-      filteredProducts = filteredProducts.filter(product => product.category === categoryId);
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get('search');
+    if (search) {
+      setSearchQuery(search);
     }
+  }, [location.search]);
 
-    // Lọc theo search query
-    if (searchQuery) {
-      filteredProducts = filteredProducts.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+  // Fetch dữ liệu từ API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    // Lọc theo thương hiệu
-    if (selectedBrands.length > 0) {
-      filteredProducts = filteredProducts.filter(product =>
-        selectedBrands.includes(product.brand)
-      );
-    }
+        // Fetch categories và brands
+        const [categoriesData, brandsData] = await Promise.all([
+          productAPI.getCategories(),
+          productAPI.getBrands()
+        ]);
 
-    // Lọc theo khoảng giá
-    if (priceRange !== 'all') {
-      const [min, max] = priceRange.split('-').map(Number);
-      filteredProducts = filteredProducts.filter(product =>
-        product.price >= min && (max ? product.price <= max : true)
-      );
-    }
+        setCategories(categoriesData.data || []);
+        setBrands(brandsData.data || []);
 
-    // Sắp xếp
-    switch (sortBy) {
-      case 'price-asc':
-        filteredProducts.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        filteredProducts.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        filteredProducts.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'newest':
-        filteredProducts.sort((a, b) => b.id - a.id);
-        break;
-      default:
-        filteredProducts.sort((a, b) => b.reviews - a.reviews);
-    }
+        // Fetch products với filters
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+          sortBy: sortBy === 'popular' ? 'soldCount' : sortBy === 'rating' ? 'rating' : sortBy === 'newest' ? 'createdAt' : 'price',
+          sortOrder: sortBy === 'price-asc' ? 'asc' : 'desc'
+        };
 
-    setProducts(filteredProducts);
-    setLoading(false);
-  }, [categoryId, searchQuery, sortBy, priceRange, selectedBrands]);
+        if (searchQuery) {
+          params.search = searchQuery;
+        }
 
-  const handleToggleFavorite = (productId: number) => {
+        if (categoryId && categoryId !== 'all') {
+          params.category = categoryId;
+        }
+
+        if (selectedBrands.length > 0) {
+          params.brand = selectedBrands.join(',');
+        }
+
+        // Lọc theo khoảng giá
+        if (priceRange !== 'all') {
+          const [min, max] = priceRange.split('-').map(Number);
+          params.minPrice = min;
+          params.maxPrice = max || undefined;
+        }
+
+        const productsData = await productAPI.getAll(params);
+        
+        setProducts(productsData.products || []);
+        setTotalPages(productsData.totalPages || 1);
+        setTotalProducts(productsData.totalProducts || 0);
+
+      } catch (err) {
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [categoryId, searchQuery, sortBy, priceRange, selectedBrands, currentPage]);
+
+  const handleToggleFavorite = (productId: string) => {
     setFavorites(prev =>
       prev.includes(productId)
         ? prev.filter(id => id !== productId)
@@ -147,14 +195,31 @@ const Products: React.FC = () => {
     );
   };
 
-  const handleAddToCart = (productId: number) => {
-    const product = allProducts.find((p: Product) => p.id === productId);
-    if (product) {
-      addToCart(product, 1);
-      enqueueSnackbar(`Đã thêm ${product.name} vào giỏ hàng`, {
-        variant: 'success',
-      });
+  const handleAddToCart = (product: any) => {
+    addToCart(product, 1);
+    enqueueSnackbar(`Đã thêm ${product.name} vào giỏ hàng`, {
+      variant: 'success',
+    });
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/products');
     }
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setPriceRange('all');
+    setSelectedBrands([]);
+    setSelectedCategories([]);
+    setSortBy('popular');
+    setCurrentPage(1);
+    navigate('/products');
   };
 
   const getCategoryInfo = () => {
@@ -172,23 +237,112 @@ const Products: React.FC = () => {
     };
   };
 
-  // Lấy danh sách thương hiệu từ sản phẩm đã lọc theo danh mục
-  const availableBrands = Array.from(
-    new Set(
-      allProducts
-        .filter((p: Product) => !categoryId || categoryId === 'all' || p.category === categoryId)
-        .map((p: Product) => p.brand)
-    )
-  );
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
 
-  // Tính toán số trang
-  const totalPages = Math.ceil(products.length / itemsPerPage);
-  const currentProducts = products.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const renderProductCard = (product: any) => (
+    <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
+      <Box sx={{ position: 'relative', p: 2 }}>
+        <img 
+          src={product.images?.[0] || '/placeholder-product.jpg'} 
+          alt={product.name}
+          style={{ 
+            width: '100%', 
+            height: 200, 
+            objectFit: 'cover',
+            borderRadius: 8
+          }}
+        />
+        {product.discount > 0 && (
+          <Chip
+            label={`-${product.discount}%`}
+            color="error"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              fontWeight: 'bold'
+            }}
+          />
+        )}
+        <IconButton
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            '&:hover': { backgroundColor: 'white' }
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleFavorite(product._id);
+          }}
+        >
+          <Favorite 
+            color={favorites.includes(product._id) ? 'error' : 'action'} 
+          />
+        </IconButton>
+      </Box>
+      
+      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" component="h3" gutterBottom sx={{ 
+          fontWeight: 600,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {product.name}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Star sx={{ color: 'warning.main', fontSize: 16, mr: 0.5 }} />
+          <Typography variant="body2" color="text.secondary">
+            {product.rating || 0} ({product.reviewCount || 0} đánh giá)
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Typography variant="h6" color="primary" fontWeight="bold">
+            {formatPrice(product.price)}
+          </Typography>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+              {formatPrice(product.originalPrice)}
+            </Typography>
+          )}
+        </Box>
+        
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToCart(product);
+          }}
+          sx={{ mt: 'auto' }}
+        >
+          Thêm vào giỏ
+        </Button>
+      </Box>
+    </StyledProductCard>
   );
 
   const categoryInfo = getCategoryInfo();
+
+  if (loading && products.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -346,18 +500,18 @@ const Products: React.FC = () => {
             Thương hiệu:
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {availableBrands.map((brand: string) => (
+            {brands.map((brand: any) => (
               <Chip
-                key={brand}
-                label={brand}
+                key={brand._id}
+                label={brand.name}
                 onClick={() => {
                   setSelectedBrands((prev: string[]) =>
-                    prev.includes(brand)
-                      ? prev.filter((b: string) => b !== brand)
-                      : [...prev, brand]
+                    prev.includes(brand._id)
+                      ? prev.filter((b: string) => b !== brand._id)
+                      : [...prev, brand._id]
                   );
                 }}
-                color={selectedBrands.includes(brand) ? 'primary' : 'default'}
+                color={selectedBrands.includes(brand._id) ? 'primary' : 'default'}
                 sx={{ m: 0.5 }}
               />
             ))}
@@ -371,18 +525,17 @@ const Products: React.FC = () => {
               Bộ lọc đang áp dụng:
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {selectedBrands.map((brand) => (
-                <Chip
-                  key={brand}
-                  label={`Thương hiệu: ${brand}`}
-                  onDelete={() => {
-                    setSelectedBrands((prev) =>
-                      prev.filter((b) => b !== brand)
-                    );
-                  }}
-                  sx={{ m: 0.5 }}
-                />
-              ))}
+              {selectedBrands.map((brandId) => {
+                const brand = brands.find(b => b._id === brandId);
+                return brand ? (
+                  <Chip
+                    key={brandId}
+                    label={brand.name}
+                    onDelete={() => setSelectedBrands(prev => prev.filter(id => id !== brandId))}
+                    sx={{ m: 0.5 }}
+                  />
+                ) : null;
+              })}
               {priceRange !== 'all' && (
                 <Chip
                   label={`Giá: ${
@@ -390,11 +543,11 @@ const Products: React.FC = () => {
                       '0-1000000': 'Dưới 1 triệu',
                       '1000000-5000000': '1 - 5 triệu',
                       '5000000-10000000': '5 - 10 triệu',
-                      '10000000-20000000': '10 - 20 triệu',
+                      '10000000-20000000': '10 - 20 triệu',   
                       '20000000': 'Trên 20 triệu',
                     }[priceRange]
                   }`}
-                  onDelete={() => setPriceRange('all')}
+                  onDelete={() => setPriceRange('all')}       
                   sx={{ m: 0.5 }}
                 />
               )}
@@ -423,14 +576,9 @@ const Products: React.FC = () => {
           </Box>
         ) : products.length > 0 ? (
           <Grid container spacing={3}>
-            {currentProducts.map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product.id}>
-                <ProductCard
-                  {...product}
-                  isFavorite={favorites.includes(product.id)}
-                  onToggleFavorite={() => handleToggleFavorite(product.id)}
-                  onAddToCart={() => handleAddToCart(product.id)}
-                />
+            {products.map((product) => (
+              <Grid item xs={12} sm={6} md={3} key={product._id}>
+                {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>

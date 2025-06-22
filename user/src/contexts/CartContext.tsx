@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../data/products';
+import { orderAPI } from '../services/api';
 
 export interface CartItem extends Product {
   quantity: number;
@@ -9,14 +10,16 @@ export interface CartItem extends Product {
 }
 
 interface Order {
-  id: number;
+  _id: string;
+  orderNumber: string;
   items: CartItem[];
-  total: number;
+  totalAmount: number;
   status: string;
   date: Date;
-  customerId: string;
+  customer: string;
   shippingAddress: string;
   paymentMethod: string;
+  paymentStatus: string;
 }
 
 interface CartContextType {
@@ -27,7 +30,8 @@ interface CartContextType {
   clearCart: () => void;
   getCartTotal: () => number;
   orderHistory: Order[];
-  placeOrder: (shippingAddress: string, paymentMethod: string) => void;
+  placeOrder: (shippingAddress: string, paymentMethod: string) => Promise<void>;
+  loadOrderHistory: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,27 +40,36 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
 
-  // Load cart and order history from localStorage on mount
+  // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
-    const savedOrders = localStorage.getItem('orderHistory');
-    
     if (savedCart) {
       setCartItems(JSON.parse(savedCart));
     }
-    if (savedOrders) {
-      setOrderHistory(JSON.parse(savedOrders));
-    }
   }, []);
 
-  // Save cart and order history to localStorage whenever they change
+  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
+  // Load order history from API
+  const loadOrderHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const orders = await orderAPI.getUserOrders();
+        setOrderHistory(orders);
+      }
+    } catch (error) {
+      console.error('Error loading order history:', error);
+    }
+  };
+
+  // Load order history on mount if user is logged in
   useEffect(() => {
-    localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-  }, [orderHistory]);
+    loadOrderHistory();
+  }, []);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCartItems(prevItems => {
@@ -91,17 +104,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const clearCart = () => {
-    const newOrder: Order = {
-      id: Date.now(),
-      items: [...cartItems],
-      total: getCartTotal(),
-      status: 'completed',
-      date: new Date(),
-      customerId: 'user123', // Replace with actual user ID
-      shippingAddress: 'Default Address', // Replace with actual address
-      paymentMethod: 'Credit Card' // Replace with actual payment method
-    };
-    setOrderHistory(prev => [...prev, newOrder]);
     setCartItems([]);
   };
 
@@ -114,19 +116,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 0);
   };
 
-  const placeOrder = (shippingAddress: string, paymentMethod: string) => {
-    const newOrder: Order = {
-      id: Date.now(),
-      items: [...cartItems],
-      total: getCartTotal(),
-      status: 'pending',
-      date: new Date(),
-      customerId: 'user123', // Replace with actual user ID
-      shippingAddress,
-      paymentMethod
-    };
-    setOrderHistory(prev => [...prev, newOrder]);
-    setCartItems([]);
+  const placeOrder = async (shippingAddress: string, paymentMethod: string) => {
+    try {
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id.toString(),
+          quantity: item.quantity,
+          price: item.discount ? item.price * (1 - item.discount / 100) : item.price,
+          name: item.name,
+          image: item.image,
+          brand: item.brand
+        })),
+        shippingAddress,
+        paymentMethod,
+        totalAmount: getCartTotal()
+      };
+
+      await orderAPI.create(orderData);
+      setCartItems([]);
+      await loadOrderHistory(); // Reload order history
+    } catch (error) {
+      console.error('Error placing order:', error);
+      throw error;
+    }
   };
 
   return (
@@ -139,7 +151,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         getCartTotal,
         orderHistory,
-        placeOrder
+        placeOrder,
+        loadOrderHistory
       }}
     >
       {children}

@@ -29,6 +29,12 @@ interface Order {
   status: string;
   paymentStatus: string;
   shippingAddress: string;
+  items?: Array<{
+    productId: string;
+    productName?: string;
+    quantity: number;
+    price: number;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +107,7 @@ const Orders: React.FC = () => {
         status: order.status,
         paymentStatus: order.paymentStatus,
         shippingAddress: order.shippingAddress,
+        items: order.items,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt
       }));
@@ -145,17 +152,71 @@ const Orders: React.FC = () => {
     },
     { field: 'status', headerName: 'Trạng thái', width: 130 },
     { field: 'paymentStatus', headerName: 'Thanh toán', width: 130 },
+    { 
+      field: 'items', 
+      headerName: 'Sản phẩm', 
+      width: 200,
+      renderCell: (params) => {
+        const items = params.value || [];
+        if (items.length === 0) return 'Không có sản phẩm';
+        
+        return (
+          <Box>
+            {items.slice(0, 2).map((item: any, index: number) => (
+              <Typography key={index} variant="caption" display="block">
+                {item.productName || `SP ${item.productId.slice(-6)}`} x{item.quantity}
+              </Typography>
+            ))}
+            {items.length > 2 && (
+              <Typography variant="caption" color="text.secondary">
+                +{items.length - 2} sản phẩm khác
+              </Typography>
+            )}
+          </Box>
+        );
+      }
+    },
     { field: 'shippingAddress', headerName: 'Địa chỉ giao hàng', width: 300 },
     {
       field: 'actions',
       headerName: 'Thao tác',
-      width: 150,
+      width: 300,
       renderCell: (params) => (
-        <Box>
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            color="success"
+            onClick={() => handleConfirmOrder(params.row.id)}
+            disabled={params.row.status === 'Đã hoàn thành'}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            Xác nhận
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="warning"
+            onClick={() => handleUpdatePaymentStatus(params.row.id, 'Đã thanh toán')}
+            disabled={params.row.paymentStatus === 'Đã thanh toán'}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            Đã TT
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="error"
+            onClick={() => handleCancelOrder(params.row.id)}
+            disabled={params.row.status === 'Đã hủy'}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            Hủy
+          </Button>
           <Button
             size="small"
             onClick={() => handleEdit(params.row)}
-            sx={{ mr: 1 }}
+            sx={{ minWidth: 'auto', px: 1 }}
           >
             Sửa
           </Button>
@@ -163,6 +224,7 @@ const Orders: React.FC = () => {
             size="small"
             color="error"
             onClick={() => handleDelete(params.row.id)}
+            sx={{ minWidth: 'auto', px: 1 }}
           >
             Xóa
           </Button>
@@ -225,6 +287,113 @@ const Orders: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Thao tác nhanh: Xác nhận đơn hàng
+  const handleConfirmOrder = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        return;
+      }
+
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      await axios.put(`http://localhost:5000/api/orders/${id}`, {
+        ...order,
+        status: 'Đã hoàn thành',
+        paymentStatus: 'Đã thanh toán'
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      await fetchOrders();
+      setError(null);
+    } catch (err) {
+      console.error('Error confirming order:', err);
+      if (axios.isAxiosError(err)) {
+        setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể xác nhận đơn hàng'}`);
+      } else {
+        setError('Có lỗi xảy ra khi xác nhận đơn hàng');
+      }
+    }
+  };
+
+  // Thao tác nhanh: Hủy đơn hàng
+  const handleCancelOrder = async (id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        return;
+      }
+
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      await axios.put(`http://localhost:5000/api/orders/${id}`, {
+        ...order,
+        status: 'Đã hủy'
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      await fetchOrders();
+      setError(null);
+    } catch (err) {
+      console.error('Error canceling order:', err);
+      if (axios.isAxiosError(err)) {
+        setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể hủy đơn hàng'}`);
+      } else {
+        setError('Có lỗi xảy ra khi hủy đơn hàng');
+      }
+    }
+  };
+
+  // Thao tác nhanh: Cập nhật trạng thái thanh toán
+  const handleUpdatePaymentStatus = async (id: string, paymentStatus: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        return;
+      }
+
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      await axios.put(`http://localhost:5000/api/orders/${id}`, {
+        ...order,
+        paymentStatus
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      await fetchOrders();
+      setError(null);
+    } catch (err) {
+      console.error('Error updating payment status:', err);
+      if (axios.isAxiosError(err)) {
+        setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể cập nhật trạng thái thanh toán'}`);
+      } else {
+        setError('Có lỗi xảy ra khi cập nhật trạng thái thanh toán');
+      }
     }
   };
 

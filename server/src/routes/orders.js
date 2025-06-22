@@ -1,10 +1,85 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
+// User routes (authentication required)
+// Get user's own orders
+router.get('/user', auth, async (req, res) => {
+  try {
+    const orders = await Order.find({ customer: req.user.email })
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách đơn hàng' });
+  }
+});
+
+// Create order for user
+router.post('/user', auth, async (req, res) => {
+  try {
+    const { items, shippingAddress, paymentMethod, totalAmount } = req.body;
+
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Process items to include product information
+    const processedItems = items.map(item => ({
+      productId: item.productId,
+      productName: item.productName || `Sản phẩm ${item.productId.slice(-6)}`,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image || '',
+      brand: item.brand || '',
+      sku: item.sku || ''
+    }));
+
+    const order = new Order({
+      orderNumber,
+      customer: req.user.email,
+      date: new Date(),
+      totalAmount,
+      status: 'Đang xử lý',
+      paymentStatus: 'Chờ thanh toán',
+      shippingAddress,
+      paymentMethod,
+      items: processedItems
+    });
+
+    await order.save();
+    res.status(201).json(order);
+  } catch (error) {
+    console.error('Error creating user order:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Dữ liệu không hợp lệ', errors: error.errors });
+    }
+    res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng mới' });
+  }
+});
+
+// Get single order for user
+router.get('/user/:id', auth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ 
+      _id: req.params.id, 
+      customer: req.user.email 
+    });
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching user order:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thông tin đơn hàng' });
+  }
+});
+
+// Admin routes (admin authentication required)
 // Get all orders with pagination
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, adminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -29,8 +104,22 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Add new order
-router.post('/', auth, async (req, res) => {
+// Get single order for admin with product details
+router.get('/:id', auth, adminAuth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thông tin đơn hàng' });
+  }
+});
+
+// Add new order (admin)
+router.post('/', auth, adminAuth, async (req, res) => {
   try {
     const { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress } = req.body;
 
@@ -62,9 +151,9 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update order
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
-    const { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress } = req.body;
+    const { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress, items } = req.body;
     const orderId = req.params.id;
 
     // Check if order number exists for other orders
@@ -73,9 +162,14 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(400).json({ message: 'Mã đơn hàng đã tồn tại trong hệ thống' });
     }
 
+    const updateData = { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress };
+    if (items) {
+      updateData.items = items;
+    }
+
     const order = await Order.findByIdAndUpdate(
       orderId,
-      { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -94,7 +188,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete order
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
     if (!order) {
@@ -108,7 +202,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // Clear all orders
-router.delete('/clear-all', auth, async (req, res) => {
+router.delete('/clear-all', auth, adminAuth, async (req, res) => {
   try {
     const result = await Order.deleteMany({});
     res.json({ 

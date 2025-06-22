@@ -89,6 +89,16 @@ const NavBar: React.FC = () => {
             Sự kiện trực tiếp
           </Button>
 
+          {/* Order History Button */}
+          <Button
+            color="inherit"
+            startIcon={<HistoryIcon />}
+            onClick={() => navigate('/order-history')}
+            sx={{ textTransform: 'none' }}
+          >
+            Lịch sử đơn hàng
+          </Button>
+
           <IconButton 
             color="inherit"
             onClick={() => navigate('/cart')}
@@ -130,6 +140,9 @@ const NavBar: React.FC = () => {
         >
           <MenuItem onClick={() => handleNavigate('/profile')}>
             <PersonIcon sx={{ mr: 1 }} /> Thông tin cá nhân
+          </MenuItem>
+          <MenuItem onClick={() => handleNavigate('/order-history')}>
+            <HistoryIcon sx={{ mr: 1 }} /> Lịch sử đơn hàng
           </MenuItem>
           <MenuItem onClick={() => handleNavigate('/settings')}>
             <SettingsIcon sx={{ mr: 1 }} /> Cài đặt

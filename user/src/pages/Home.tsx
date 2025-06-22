@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -13,6 +13,9 @@ import {
   IconButton,
   Badge,
   Card,
+  CircularProgress,
+  Alert,
+  Chip,
 } from '@mui/material';
 import {
   Kitchen,
@@ -32,6 +35,8 @@ import {
   LocalShipping as ShippingIcon,
   Security as SecurityIcon,
   Support as SupportIcon,
+  TrendingUp,
+  Star,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Carousel from 'react-material-ui-carousel';
@@ -42,7 +47,7 @@ import { styled } from '@mui/material/styles';
 import ChallengeCard from '../components/home/ChallengeCard';
 import EventCard from '../components/home/EventCard';
 import { Images } from '../assets/index';
-import { products as allProducts, Product } from '../data/products';
+import { productAPI, salesEventAPI } from '../services/api';
 
 const StyledCarousel = styled(Carousel)(({ theme }) => ({
   '& .MuiIconButton-root': {
@@ -67,14 +72,82 @@ const StyledCarousel = styled(Carousel)(({ theme }) => ({
   }
 }));
 
+const StyledProductCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'all 0.3s ease',
+  cursor: 'pointer',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+}));
+
 const Home: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('268 Lý Thường Kiệt, Phường 14, Quận 10, Hồ Chí Minh');
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const featuredProducts = allProducts.filter((product: Product) => product.featured);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  
+  // State cho dữ liệu từ API
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [bestSellers, setBestSellers] = useState<any[]>([]);
+  const [onSaleProducts, setOnSaleProducts] = useState<any[]>([]);
+  const [salesEvents, setSalesEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch dữ liệu từ API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching data from API...');
+        
+        const [featured, events] = await Promise.all([
+          productAPI.getFeatured(),
+          salesEventAPI.getAll()
+        ]);
+        
+        console.log('Featured products:', featured);
+        console.log('Sales events:', events);
+        
+        // Extract products from API response
+        const featuredProductsData = Array.isArray(featured) ? featured : (featured?.data || featured?.products || []);
+        const salesEventsData = Array.isArray(events) ? events : (events?.data || events?.events || []);
+        
+        setFeaturedProducts(featuredProductsData);
+        setSalesEvents(salesEventsData);
+        
+        // Lấy sản phẩm bán chạy và đang sale
+        const [bestSellersData, onSaleData] = await Promise.all([
+          productAPI.getAll({ sortBy: 'soldCount', sortOrder: 'desc', limit: 4 }),
+          productAPI.getAll({ sortBy: 'discount', sortOrder: 'desc', limit: 4 })
+        ]);
+        
+        console.log('Best sellers:', bestSellersData);
+        console.log('On sale products:', onSaleData);
+        
+        // Extract products from API response
+        const bestSellersProducts = Array.isArray(bestSellersData) ? bestSellersData : (bestSellersData?.data || bestSellersData?.products || []);
+        const onSaleProductsData = Array.isArray(onSaleData) ? onSaleData : (onSaleData?.data || onSaleData?.products || []);
+        
+        setBestSellers(bestSellersProducts);
+        setOnSaleProducts(onSaleProductsData);
+        
+      } catch (err) {
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Mock data cho banner
   const bannerItems = [
@@ -110,89 +183,6 @@ const Home: React.FC = () => {
     { id: 'appliance', name: 'Điện Gia Dụng', image: Images.appliance, icon: <ElectricalServices fontSize="large" /> },
     { id: 'smart', name: 'Đồ Dùng Thông Minh', image: Images.smart, icon: <SmartToy fontSize="large" /> },
   ];
-  // Mock data cho sản phẩm bán chạy
-  const bestSellers = [
-    {
-      id: 1,
-      name: 'Máy Lọc Không Khí Samsung',
-      image: Images.maylockksamsung,
-      price: 4990000,
-      rating: 4.8,
-      reviews: 356,
-      discount: 10,
-      soldCount: 1234,
-    },
-    {
-      id: 2,
-      name: 'Robot Hút Bụi Thông Minh',
-      image: Images.robothutbui,
-      price: 7990000,
-      rating: 4.7,
-      reviews: 245,
-      discount: 15,
-      soldCount: 987,
-    },
-    {
-      id: 3,
-      name: 'Nồi Chiên Không Dầu',
-      image: Images.noichienkhongdau,
-      price: 2490000,
-      rating: 4.9,
-      reviews: 567,
-      discount: 20,
-      soldCount: 2345,
-    },
-    {
-      id: 4,
-      name: 'Máy Pha Cà Phê Tự Động',
-      image: Images.mayphacaphe,
-      price: 5990000,
-      rating: 4.6,
-      reviews: 189,
-      discount: 12,
-      soldCount: 876,
-    },
-  ];
-
-  // Mock data cho sản phẩm đang sale
-  const onSaleProducts = [
-    {
-      id: 5,
-      name: 'Smart TV QLED 65"',
-      image: Images.smarttv,
-      price: 35900000,
-      rating: 4.7,
-      reviews: 123,
-      discount: 30,
-    },
-    {
-      id: 6,
-      name: 'Tủ Lạnh Side by Side',
-      image: Images.tulanh,
-      price: 28900000,
-      rating: 4.8,
-      reviews: 234,
-      discount: 25,
-    },
-    {
-      id: 7,
-      name: 'Máy Giặt Cửa Trước',
-      image: Images.maygiat,
-      price: 12900000,
-      rating: 4.6,
-      reviews: 178,
-      discount: 35,
-    },
-    {
-      id: 8,
-      name: 'Lò Vi Sóng Digital',
-      image: Images.lovisong,
-      price: 3990000,
-      rating: 4.5,
-      reviews: 156,
-      discount: 40,
-    },
-  ];
 
   // Mock data cho sản phẩm đã xem
   const recentlyViewed = [
@@ -200,236 +190,63 @@ const Home: React.FC = () => {
       id: 9,
       name: 'Máy Lọc Nước RO',
       image: Images.maylocnuoc,
-      price: 6990000,
-      rating: 4.6,
-      reviews: 145,
-      discount: 10,
-    },
-    {
-      id: 10,
-      name: 'Bếp Điện Từ Đôi',
-      image: Images.bepdientu,
       price: 8990000,
       rating: 4.7,
-      reviews: 167,
+      reviews: 234,
       discount: 15,
     },
     {
-      id: 11,
-      name: 'Máy Rửa Chén',
-      image: Images.mayruachen,
-      price: 9990000,
+      id: 10,
+      name: 'Bếp Từ Đôi',
+      image: Images.beptu,
+      price: 3990000,
       rating: 4.8,
       reviews: 189,
       discount: 20,
     },
     {
+      id: 11,
+      name: 'Máy Hút Mùi',
+      image: Images.mayhutmui,
+      price: 2990000,
+      rating: 4.6,
+      reviews: 156,
+      discount: 10,
+    },
+    {
       id: 12,
-      name: 'Máy Sấy Quần Áo',
-      image: Images.maysayquanao,
-      price: 11990000,
-      rating: 4.5,
-      reviews: 134,
-      discount: 12,
+      name: 'Máy Rửa Bát',
+      image: Images.mayruabat,
+      price: 15900000,
+      rating: 4.9,
+      reviews: 89,
+      discount: 25,
     },
   ];
 
-  // Mock data cho Challenges
+  // Mock data cho thử thách
   const challenges = [
     {
-      id: '1',
-      title: 'Thử thách tiết kiệm mùa hè',
-      description: 'Tham gia thử thách mua sắm thông minh với các sản phẩm tiết kiệm điện trong mùa hè này. Cơ hội nhận nhiều phần quà hấp dẫn.',
-      image: 'https://source.unsplash.com/800x600/?summer-sale',
-      status: 'Đang diễn ra',
-      startDate: new Date('2024-03-01'),
-      endDate: new Date('2024-03-31'),
+      id: 'challenge-1',
+      title: 'Thử Thách Tiết Kiệm',
+      description: 'Tiết kiệm 20% hóa đơn điện nước trong tháng này',
+      reward: '500.000 VNĐ',
       participants: 1234,
-      reward: 'Voucher giảm giá lên đến 2.000.000đ',
+      endDate: new Date('2024-02-29'),
+      image: Images.thachthach,
+      status: 'Đang diễn ra',
     },
     {
-      id: '2',
-      title: 'Thử thách nhà thông minh',
-      description: 'Khám phá và trải nghiệm các sản phẩm smart home. Chia sẻ cách bạn biến ngôi nhà thành không gian sống thông minh.',
-      image: 'https://source.unsplash.com/800x600/?smart-home',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-01'),
-      endDate: new Date('2024-04-30'),
+      id: 'challenge-2',
+      title: 'Thử Thách Xanh',
+      description: 'Sử dụng sản phẩm tiết kiệm năng lượng',
+      reward: '300.000 VNĐ',
       participants: 856,
-      reward: 'Bộ sản phẩm smart home trị giá 5.000.000đ',
-    },
-    {
-      id: '3',
-      title: 'Thử thách sống xanh',
-      description: 'Tham gia thử thách sử dụng các sản phẩm thân thiện với môi trường. Cùng nhau tạo nên một lối sống bền vững.',
-      image: 'https://source.unsplash.com/800x600/?eco-friendly',
+      endDate: new Date('2024-03-15'),
+      image: Images.thachthach,
       status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-15'),
-      endDate: new Date('2024-05-15'),
-      participants: 567,
-      reward: 'Combo sản phẩm eco-friendly trị giá 3.000.000đ',
-    },
-    {
-      id: '4',
-      title: 'Đánh giá 5 sao - Nhận quà khủng',
-      description: 'Viết đánh giá chi tiết và chất lượng cho 5 sản phẩm bất kỳ. Cơ hội nhận ngay voucher mua sắm giá trị.',
-      image: 'https://source.unsplash.com/800x600/?review-rating',
-      status: 'Đang diễn ra',
-      startDate: new Date('2024-03-10'),
-      endDate: new Date('2024-03-25'),
-      participants: 789,
-      reward: 'Voucher mua sắm 1.000.000đ',
-    },
-    {
-      id: '5',
-      title: 'Thử thách tiết kiệm nước',
-      description: 'Sử dụng các thiết bị thông minh để tiết kiệm nước. Chia sẻ kết quả và nhận giải thưởng hấp dẫn.',
-      image: 'https://source.unsplash.com/800x600/?water-saving',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-05'),
-      endDate: new Date('2024-05-05'),
-      participants: 432,
-      reward: 'Máy lọc nước thông minh trị giá 6.000.000đ',
-    },
-    {
-      id: '6',
-      title: 'Góc bếp công nghệ',
-      description: 'Quay video nấu ăn sử dụng các thiết bị nhà bếp thông minh. Chia sẻ công thức và bí quyết nấu nướng.',
-      image: 'https://source.unsplash.com/800x600/?smart-kitchen',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-10'),
-      endDate: new Date('2024-05-10'),
-      participants: 345,
-      reward: 'Bộ thiết bị nhà bếp cao cấp trị giá 8.000.000đ',
-    },
-    {
-      id: '7',
-      title: 'Thử thách trang trí nhà thông minh',
-      description: 'Chia sẻ ý tưởng trang trí nhà với các thiết bị thông minh. Tạo không gian sống hiện đại và tiện nghi.',
-      image: 'https://source.unsplash.com/800x600/?smart-decoration',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-20'),
-      endDate: new Date('2024-05-20'),
-      participants: 278,
-      reward: 'Bộ đèn thông minh trị giá 4.000.000đ',
-    },
-    {
-      id: '8',
-      title: 'Thử thách an ninh thông minh',
-      description: 'Chia sẻ giải pháp bảo vệ ngôi nhà với các thiết bị an ninh thông minh. Xây dựng hệ thống bảo vệ toàn diện.',
-      image: 'https://source.unsplash.com/800x600/?smart-security',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-05-01'),
-      endDate: new Date('2024-05-31'),
-      participants: 423,
-      reward: 'Bộ camera an ninh trị giá 7.000.000đ',
     },
   ];
-
-  // Mock data cho Events
-  const events = [
-    {
-      id: '1',
-      title: 'Hội chợ công nghệ 2024',
-      description: 'Khám phá các xu hướng công nghệ mới nhất và trải nghiệm các sản phẩm độc đáo tại hội chợ công nghệ lớn nhất năm.',
-      image: 'https://source.unsplash.com/800x600/?tech-fair',
-      status: 'Đang diễn ra',
-      startDate: new Date('2024-03-15'),
-      endDate: new Date('2024-03-20'),
-      participants: 2500,
-    },
-    {
-      id: '2',
-      title: 'Workshop Smart Living',
-      description: 'Tham gia workshop để học hỏi cách tối ưu không gian sống với các giải pháp thông minh từ các chuyên gia hàng đầu.',
-      image: 'https://source.unsplash.com/800x600/?smart-living',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-10'),
-      endDate: new Date('2024-04-10'),
-      participants: 150,
-    },
-    {
-      id: '3',
-      title: 'Tech Talk: Tương lai của IoT',
-      description: 'Buổi nói chuyện chuyên sâu về xu hướng IoT và cách áp dụng vào cuộc sống hàng ngày với các chuyên gia công nghệ.',
-      image: 'https://source.unsplash.com/800x600/?iot-technology',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-20'),
-      endDate: new Date('2024-04-20'),
-      participants: 300,
-    },
-    {
-      id: '4',
-      title: 'Triển lãm nhà thông minh 2024',
-      description: 'Tham quan và trải nghiệm không gian sống thông minh với các công nghệ hiện đại nhất. Cơ hội mua sắm với ưu đãi đặc biệt.',
-      image: 'https://source.unsplash.com/800x600/?smart-home-expo',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-04-25'),
-      endDate: new Date('2024-04-28'),
-      participants: 1800,
-    },
-    {
-      id: '5',
-      title: 'Workshop: Tối ưu năng lượng trong gia đình',
-      description: 'Học hỏi cách sử dụng các thiết bị thông minh để tiết kiệm năng lượng và bảo vệ môi trường.',
-      image: 'https://source.unsplash.com/800x600/?energy-saving',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-05-05'),
-      endDate: new Date('2024-05-05'),
-      participants: 200,
-    },
-    {
-      id: '6',
-      title: 'Ngày hội công nghệ cho người cao tuổi',
-      description: 'Giới thiệu các sản phẩm công nghệ thân thiện với người cao tuổi. Hướng dẫn sử dụng và tư vấn chọn mua.',
-      image: 'https://source.unsplash.com/800x600/?elderly-tech',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-05-15'),
-      endDate: new Date('2024-05-15'),
-      participants: 250,
-    },
-    {
-      id: '7',
-      title: 'Hội thảo An ninh mạng cho Nhà thông minh',
-      description: 'Tìm hiểu về các giải pháp bảo mật và bảo vệ thiết bị thông minh trong nhà khỏi các mối đe dọa mạng.',
-      image: 'https://source.unsplash.com/800x600/?cybersecurity',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-05-20'),
-      endDate: new Date('2024-05-20'),
-      participants: 180,
-    },
-    {
-      id: '8',
-      title: 'Ngày hội Khởi nghiệp Công nghệ',
-      description: 'Gặp gỡ và kết nối với các startup trong lĩnh vực smart home và IoT. Cơ hội đầu tư và hợp tác.',
-      image: 'https://source.unsplash.com/800x600/?tech-startup',
-      status: 'Sắp diễn ra',
-      startDate: new Date('2024-06-01'),
-      endDate: new Date('2024-06-02'),
-      participants: 400,
-    },
-  ];
-
-  const handleToggleFavorite = (productId: number) => {
-    setFavorites(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  const handleAddToCart = (productId: number) => {
-    // TODO: Implement add to cart functionality
-    console.log('Add to cart:', productId);
-    navigate('/cart');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   const features = [
     {
@@ -449,15 +266,150 @@ const Home: React.FC = () => {
     },
   ];
 
+  const handleToggleFavorite = (productId: string) => {
+    setFavorites(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleAddToCart = (productId: string) => {
+    // TODO: Implement add to cart functionality
+    console.log('Add to cart:', productId);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   const handleJoinChallenge = (challengeId: string) => {
+    // TODO: Implement join challenge functionality
     console.log('Join challenge:', challengeId);
-    // TODO: Implement challenge join logic
   };
 
   const handleRegisterEvent = (eventId: string) => {
+    // TODO: Implement register event functionality
     console.log('Register event:', eventId);
-    // TODO: Implement event registration logic
   };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
+  const renderProductCard = (product: any) => (
+    <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
+      <Box sx={{ position: 'relative', p: 2 }}>
+        <img 
+          src={product.images?.[0] || '/placeholder-product.jpg'} 
+          alt={product.name}
+          style={{ 
+            width: '100%', 
+            height: 200, 
+            objectFit: 'cover',
+            borderRadius: theme.shape.borderRadius 
+          }}
+        />
+        {product.discount > 0 && (
+          <Chip
+            label={`-${product.discount}%`}
+            color="error"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              fontWeight: 'bold'
+            }}
+          />
+        )}
+        <IconButton
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            '&:hover': { backgroundColor: 'white' }
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleFavorite(product._id);
+          }}
+        >
+          <Favorite 
+            color={favorites.includes(product._id) ? 'error' : 'action'} 
+          />
+        </IconButton>
+      </Box>
+      
+      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" component="h3" gutterBottom sx={{ 
+          fontWeight: 600,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {product.name}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Star sx={{ color: 'warning.main', fontSize: 16, mr: 0.5 }} />
+          <Typography variant="body2" color="text.secondary">
+            {product.rating || 0} ({product.reviewCount || 0} đánh giá)
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Typography variant="h6" color="primary" fontWeight="bold">
+            {formatPrice(product.price)}
+          </Typography>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+              {formatPrice(product.originalPrice)}
+            </Typography>
+          )}
+        </Box>
+        
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToCart(product._id);
+          }}
+          sx={{ mt: 'auto' }}
+        >
+          Thêm vào giỏ
+        </Button>
+      </Box>
+    </StyledProductCard>
+  );
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -655,14 +607,9 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {bestSellers.map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product.id}>
-                <ProductCard
-                  {...product}
-                  isFavorite={favorites.includes(product.id)}
-                  onToggleFavorite={() => handleToggleFavorite(product.id)}
-                  onAddToCart={() => handleAddToCart(product.id)}
-                />
+            {(bestSellers || []).map((product) => (
+              <Grid item xs={12} sm={6} md={3} key={product._id}>
+                {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -719,14 +666,9 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {onSaleProducts.map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product.id}>
-                <ProductCard
-                  {...product}
-                  isFavorite={favorites.includes(product.id)}
-                  onToggleFavorite={() => handleToggleFavorite(product.id)}
-                  onAddToCart={() => handleAddToCart(product.id)}
-                />
+            {(onSaleProducts || []).map((product) => (
+              <Grid item xs={12} sm={6} md={3} key={product._id}>
+                {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -831,14 +773,9 @@ const Home: React.FC = () => {
             </Typography>
           </Box>
           <Grid container spacing={3}>
-            {recentlyViewed.map((product) => (
+            {(recentlyViewed || []).map((product) => (
               <Grid item xs={12} sm={6} md={3} key={product.id}>
-                <ProductCard
-                  {...product}
-                  isFavorite={favorites.includes(product.id)}
-                  onToggleFavorite={() => handleToggleFavorite(product.id)}
-                  onAddToCart={() => handleAddToCart(product.id)}
-                />
+                {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -883,15 +820,10 @@ const Home: React.FC = () => {
           {favorites.length > 0 ? (
             <Grid container spacing={3}>
               {featuredProducts
-                .filter((product: Product) => favorites.includes(product.id))
-                .map((product: Product) => (
-                  <Grid item xs={12} sm={6} md={3} key={product.id}>
-                    <ProductCard
-                      {...product}
-                      onAddToCart={() => handleAddToCart(product.id)}
-                      onToggleFavorite={() => handleToggleFavorite(product.id)}
-                      isFavorite={favorites.includes(product.id)}
-                    />
+                .filter((product: any) => favorites.includes(product._id))
+                .map((product: any) => (
+                  <Grid item xs={12} sm={6} md={3} key={product._id}>
+                    {renderProductCard(product)}
                   </Grid>
                 ))}
             </Grid>
@@ -1021,13 +953,13 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {events.map((event) => (
-              <Grid item xs={12} sm={6} md={3} key={event.id}>
+            {(salesEvents || []).map((event) => (
+              <Grid item xs={12} sm={6} md={3} key={event._id}>
                 <EventCard
                   {...event}
                   type="event"
                   buttonText="Đăng ký tham gia"
-                  onClick={() => handleRegisterEvent(event.id)}
+                  onClick={() => handleRegisterEvent(event._id)}
                 />
               </Grid>
             ))}

@@ -1,10 +1,101 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
+// Public routes for user frontend (no authentication required)
+// Get all products with pagination and filtering (public)
+router.get('/public', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const category = req.query.category;
+    const brand = req.query.brand;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'desc' ? -1 : 1;
+
+    const query = { isActive: true };
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { brand: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (category) {
+      query.category = category;
+    }
+    if (brand) {
+      query.brand = brand;
+    }
+
+    const products = await Product.find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await Product.countDocuments(query);
+
+    res.json({
+      products,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalProducts: total
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get featured products (public) - MUST come before /public/:id
+router.get('/public/featured', async (req, res) => {
+  try {
+    const products = await Product.find({ isActive: true, featured: true })
+      .limit(8)
+      .sort({ createdAt: -1 });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get product categories (public) - MUST come before /public/:id
+router.get('/public/categories/all', async (req, res) => {
+  try {
+    const categories = await Product.distinct('category', { isActive: true });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get product brands (public) - MUST come before /public/:id
+router.get('/public/brands/all', async (req, res) => {
+  try {
+    const brands = await Product.distinct('brand', { isActive: true });
+    res.json(brands);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get single product (public) - MUST come after specific routes
+router.get('/public/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || !product.isActive) {
+      return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin routes (authentication required)
 // Get all products with pagination and filtering
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, adminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -48,7 +139,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Get single product
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, adminAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -61,7 +152,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Create new product
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, adminAuth, async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
@@ -72,12 +163,12 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update product
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, adminAuth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = [
-    'name', 'description', 'price', 'stock', 'category', 
-    'brand', 'image', 'rating', 'reviews', 'specifications', 
-    'warranty', 'isActive'
+    'name', 'description', 'price', 'originalPrice', 'discount', 'stock', 'soldCount', 'category', 
+    'brand', 'image', 'images', 'rating', 'reviewCount', 'specifications', 
+    'warranty', 'isActive', 'featured', 'sku', 'supplier', 'barcode', 'tags'
   ];
   const isValidOperation = updates.every(update => allowedUpdates.includes(update));
 
@@ -100,7 +191,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete product (soft delete)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -116,7 +207,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // Get product categories
-router.get('/categories/all', auth, async (req, res) => {
+router.get('/categories/all', auth, adminAuth, async (req, res) => {
   try {
     const categories = await Product.distinct('category');
     res.json(categories);
@@ -126,7 +217,7 @@ router.get('/categories/all', auth, async (req, res) => {
 });
 
 // Get product brands
-router.get('/brands/all', auth, async (req, res) => {
+router.get('/brands/all', auth, adminAuth, async (req, res) => {
   try {
     const brands = await Product.distinct('brand');
     res.json(brands);
@@ -136,7 +227,7 @@ router.get('/brands/all', auth, async (req, res) => {
 });
 
 // Update product stock
-router.patch('/:id/stock', auth, async (req, res) => {
+router.patch('/:id/stock', auth, adminAuth, async (req, res) => {
   try {
     const { quantity, operation } = req.body;
     const product = await Product.findById(req.params.id);
@@ -164,7 +255,7 @@ router.patch('/:id/stock', auth, async (req, res) => {
 });
 
 // Clear all products
-router.delete('/clear-all', auth, async (req, res) => {
+router.delete('/clear-all', auth, adminAuth, async (req, res) => {
   try {
     console.log('Attempting to clear all products...');
     

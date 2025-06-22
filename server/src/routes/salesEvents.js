@@ -3,6 +3,34 @@ const router = express.Router();
 const SalesEvent = require('../models/SalesEvent');
 const { auth } = require('../middleware/auth');
 
+// Public routes for user frontend (no authentication required)
+// Get all sales events (public)
+router.get('/public', async (req, res) => {
+  try {
+    const events = await SalesEvent.find({ status: 'active' })
+      .sort({ startDate: 1 })
+      .limit(10);
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching public sales events:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách sự kiện' });
+  }
+});
+
+// Get single sales event (public)
+router.get('/public/:id', async (req, res) => {
+  try {
+    const event = await SalesEvent.findById(req.params.id);
+    if (!event || event.status !== 'active') {
+      return res.status(404).json({ message: 'Không tìm thấy sự kiện' });
+    }
+    res.json(event);
+  } catch (error) {
+    console.error('Error fetching public sales event:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thông tin sự kiện' });
+  }
+});
+
 // Get all sales events with pagination
 router.get('/', auth, async (req, res) => {
   try {

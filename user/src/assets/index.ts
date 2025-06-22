@@ -20,6 +20,11 @@ import maylocnuoc from './maylocnuoc.jpg';
 import bepdientu from './bepdientu.jpg';
 import mayruachen from './mayruachen.jpg';
 import maysayquanao from './maysayquanao.jpg';
+// Thêm các hình ảnh còn thiếu
+import beptu from './bepdientu.jpg'; // Dùng tạm bepdientu
+import mayhutmui from './mayruachen.jpg'; // Dùng tạm mayruachen
+import mayruabat from './mayruachen.jpg'; // Dùng tạm mayruachen
+import thachthach from './smart.jpg'; // Dùng tạm smart
 
 // Export as an object for easy access
 export const Images = {
@@ -44,6 +49,10 @@ export const Images = {
   bepdientu,
   mayruachen,
   maysayquanao,
+  beptu,
+  mayhutmui,
+  mayruabat,
+  thachthach,
 } as const;
 
 // Export individual images if needed

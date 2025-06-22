@@ -16,9 +16,24 @@ const productSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  originalPrice: {
+    type: Number,
+    min: 0,
+  },
+  discount: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0,
+  },
   stock: {
     type: Number,
     required: true,
+    min: 0,
+    default: 0,
+  },
+  soldCount: {
+    type: Number,
     min: 0,
     default: 0,
   },
@@ -37,13 +52,17 @@ const productSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  images: [{
+    type: String,
+    trim: true,
+  }],
   rating: {
     type: Number,
     min: 0,
     max: 5,
     default: 0,
   },
-  reviews: {
+  reviewCount: {
     type: Number,
     min: 0,
     default: 0,
@@ -62,16 +81,16 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  featured: {
+    type: Boolean,
+    default: false,
+  },
   sku: {
     type: String,
     required: true,
     unique: true,
     trim: true,
   },
-  images: [{
-    type: String,
-    trim: true,
-  }],
   supplier: {
     type: String,
     trim: true,
@@ -80,11 +99,27 @@ const productSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  tags: [{
+    type: String,
+    trim: true,
+  }],
 }, {
   timestamps: true,
 });
 
 // Index for faster queries
 productSchema.index({ name: 'text', description: 'text', brand: 'text', category: 'text' });
+
+// Virtual for discounted price
+productSchema.virtual('discountedPrice').get(function() {
+  if (this.discount > 0) {
+    return this.price - (this.price * this.discount / 100);
+  }
+  return this.price;
+});
+
+// Ensure virtual fields are serialized
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Product', productSchema); 

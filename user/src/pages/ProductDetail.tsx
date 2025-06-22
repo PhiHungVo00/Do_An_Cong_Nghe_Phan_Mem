@@ -20,6 +20,12 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  CircularProgress,
+  Chip,
+  Breadcrumbs,
+  Link,
+  Paper,
+  Badge,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -30,23 +36,31 @@ import {
   LocalShipping,
   Security,
   Loop,
+  Star,
+  NavigateNext,
+  Add,
+  Remove,
 } from '@mui/icons-material';
+import { productAPI, reviewAPI } from '../services/api';
+import { useCart } from '../contexts/CartContext';
+import { useSnackbar } from 'notistack';
 
 interface Review {
-  id: string;
+  _id: string;
   userId: string;
   userName: string;
-  userAvatar: string;
+  userAvatar?: string;
   rating: number;
   comment: string;
-  date: Date;
+  createdAt: string;
   helpful: number;
 }
 
 interface Product {
-  id: string;
+  _id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   images: string[];
   description: string;
   specifications: Record<string, string>;
@@ -54,14 +68,11 @@ interface Product {
   reviewCount: number;
   stock: number;
   brand: string;
+  category: string;
+  discount?: number;
+  soldCount?: number;
   reviews: Review[];
-  relatedProducts: {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    rating: number;
-  }[];
+  relatedProducts?: any[];
 }
 
 interface TabPanelProps {
@@ -89,71 +100,50 @@ function TabPanel(props: TabPanelProps) {
 const ProductDetail: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { enqueueSnackbar } = useSnackbar();
+  
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [tabValue, setTabValue] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error',
-  });
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
+      if (!productId) return;
+      
       try {
         setLoading(true);
-        // TODO: Thay thế bằng API call thực tế
-        const mockProduct: Product = {
-          id: productId || '',
-          name: 'Nồi cơm điện thông minh',
-          price: 2490000,
-          images: Array.from({ length: 4 }, (_, i) => `https://picsum.photos/800/800?random=${i}`),
-          description: `
-            - Công nghệ nấu 3D với 6 cảm biến nhiệt
-            - Dung tích 1.8L, phù hợp cho gia đình 4-6 người
-            - Lòng nồi phủ ceramic chống dính
-            - 12 chế độ nấu thông minh
-            - Hẹn giờ nấu và giữ ấm tới 24 giờ
-            - Thiết kế hiện đại, sang trọng
-          `,
-          specifications: {
-            'Thương hiệu': 'Philips',
-            'Xuất xứ': 'Nhật Bản',
-            'Dung tích': '1.8L',
-            'Công suất': '860W',
-            'Chất liệu': 'Thép không gỉ, Ceramic',
-            'Bảo hành': '24 tháng',
-          },
-          rating: 4.5,
-          reviewCount: 128,
-          stock: 45,
-          brand: 'Philips',
-          reviews: Array.from({ length: 5 }, (_, i) => ({
-            id: `review-${i}`,
-            userId: `user-${i}`,
-            userName: `Người dùng ${i + 1}`,
-            userAvatar: `https://i.pravatar.cc/40?img=${i}`,
-            rating: Math.floor(Math.random() * 5) + 1,
-            comment: 'Sản phẩm rất tốt, đúng như mô tả. Giao hàng nhanh, đóng gói cẩn thận.',
-            date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-            helpful: Math.floor(Math.random() * 50),
-          })),
-          relatedProducts: Array.from({ length: 4 }, (_, i) => ({
-            id: `related-${i}`,
-            name: `Sản phẩm liên quan ${i + 1}`,
-            price: Math.floor(Math.random() * 2000000) + 500000,
-            image: `https://picsum.photos/400/400?random=${i + 10}`,
-            rating: Math.floor(Math.random() * 5) + 1,
-          })),
-        };
-        setProduct(mockProduct);
-      } catch (error) {
-        console.error('Error fetching product:', error);
+        setError(null);
+        
+        // Fetch product details
+        const productData = await productAPI.getById(productId);
+        setProduct(productData.data);
+        
+        // Fetch reviews
+        setReviewsLoading(true);
+        const reviewsData = await reviewAPI.getProductReviews(productId);
+        setReviews(reviewsData.data || []);
+        
+        // Fetch related products
+        const relatedData = await productAPI.getAll({
+          category: productData.data.category,
+          limit: 4
+        });
+        setRelatedProducts(relatedData.data || []);
+        
+      } catch (err) {
+        setError('Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.');
+        console.error('Error fetching product:', err);
       } finally {
         setLoading(false);
+        setReviewsLoading(false);
       }
     };
 
@@ -167,272 +157,420 @@ const ProductDetail: React.FC = () => {
     }
   };
 
+  const handleQuantityIncrement = () => {
+    if (quantity < (product?.stock || 0)) {
+      setQuantity(quantity + 1);
+    }
+  };
+
+  const handleQuantityDecrement = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };
+
   const handleAddToCart = () => {
-    // TODO: Implement add to cart functionality
-    setSnackbar({
-      open: true,
-      message: 'Đã thêm sản phẩm vào giỏ hàng',
-      severity: 'success',
-    });
+    if (product) {
+      addToCart({
+        id: parseInt(product._id) || 0,
+        name: product.name,
+        price: product.price,
+        image: product.images?.[0] || '',
+        brand: product.brand,
+        discount: product.discount,
+        rating: product.rating || 0,
+        reviews: product.reviewCount || 0,
+        category: product.category || '',
+        description: product.description || '',
+        stock: product.stock || 0
+      }, quantity);
+      enqueueSnackbar(`Đã thêm ${product.name} vào giỏ hàng`, {
+        variant: 'success',
+      });
+    }
   };
 
   const handleShare = async () => {
     try {
-      await navigator.share({
-        title: product?.name,
-        text: product?.description,
-        url: window.location.href,
-      });
+      if (navigator.share) {
+        await navigator.share({
+          title: product?.name,
+          text: product?.description,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback for browsers that don't support Web Share API
+        navigator.clipboard.writeText(window.location.href);
+        enqueueSnackbar('Đã sao chép link sản phẩm', {
+          variant: 'success',
+        });
+      }
     } catch (error) {
       console.error('Error sharing:', error);
     }
   };
 
-  if (!product) {
-    return null;
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error || 'Không tìm thấy sản phẩm'}
+        </Alert>
+      </Container>
+    );
   }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs 
+        separator={<NavigateNext fontSize="small" />}
+        sx={{ mb: 3 }}
+      >
+        <Link color="inherit" href="/" underline="hover">
+          Trang chủ
+        </Link>
+        <Link color="inherit" href="/products" underline="hover">
+          Sản phẩm
+        </Link>
+        <Typography color="text.primary">{product.name}</Typography>
+      </Breadcrumbs>
+
       <Grid container spacing={4}>
         {/* Product Images */}
         <Grid item xs={12} md={6}>
           <Box sx={{ position: 'relative' }}>
-            <Box
-              component="img"
-              src={product.images[selectedImage]}
-              alt={product.name}
-              sx={{
-                width: '100%',
-                height: 'auto',
+            <Paper 
+              elevation={2}
+              sx={{ 
                 borderRadius: 2,
-                mb: 2,
+                overflow: 'hidden',
+                mb: 2
               }}
-            />
-            <IconButton
-              sx={{ position: 'absolute', top: 8, right: 8 }}
-              onClick={() => setIsFavorite(!isFavorite)}
             >
-              {isFavorite ? (
-                <Favorite color="error" />
-              ) : (
-                <FavoriteBorder />
-              )}
-            </IconButton>
-          </Box>
-          <Grid container spacing={1}>
-            {product.images.map((image, index) => (
-              <Grid item xs={3} key={index}>
-                <Box
-                  component="img"
-                  src={image}
-                  alt={`${product.name} ${index + 1}`}
+              <img
+                src={product.images[selectedImage] || '/placeholder-product.jpg'}
+                alt={product.name}
+                style={{
+                  width: '100%',
+                  height: 400,
+                  objectFit: 'cover',
+                }}
+              />
+              {product.discount && product.discount > 0 && (
+                <Chip
+                  label={`-${product.discount}%`}
+                  color="error"
                   sx={{
-                    width: '100%',
-                    height: 'auto',
-                    borderRadius: 1,
+                    position: 'absolute',
+                    top: 16,
+                    left: 16,
+                    fontWeight: 'bold',
+                    fontSize: '1rem'
+                  }}
+                />
+              )}
+            </Paper>
+            
+            {/* Thumbnail images */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {product.images.map((image, index) => (
+                <Paper
+                  key={index}
+                  elevation={selectedImage === index ? 4 : 1}
+                  sx={{
                     cursor: 'pointer',
-                    border: index === selectedImage ? '2px solid primary.main' : 'none',
+                    border: selectedImage === index ? 2 : 0,
+                    borderColor: 'primary.main',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    }
                   }}
                   onClick={() => setSelectedImage(index)}
-                />
-              </Grid>
-            ))}
-          </Grid>
+                >
+                  <img
+                    src={image}
+                    alt={`${product.name} ${index + 1}`}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      objectFit: 'cover',
+                    }}
+                  />
+                </Paper>
+              ))}
+            </Box>
+          </Box>
         </Grid>
 
         {/* Product Info */}
         <Grid item xs={12} md={6}>
-          <Typography variant="h4" gutterBottom>
-            {product.name}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Rating value={product.rating} readOnly precision={0.5} />
-            <Typography variant="body2" sx={{ ml: 1 }}>
-              ({product.reviewCount} đánh giá)
+          <Box sx={{ position: 'sticky', top: 20 }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+              {product.name}
             </Typography>
-          </Box>
-          <Typography variant="h4" color="primary" gutterBottom>
-            {product.price.toLocaleString()}đ
-          </Typography>
-          <Typography variant="body1" paragraph>
-            {product.description}
-          </Typography>
-
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Số lượng:
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <TextField
-                type="number"
-                value={quantity}
-                onChange={handleQuantityChange}
-                inputProps={{ min: 1, max: product.stock }}
-                size="small"
-                sx={{ width: 100 }}
-              />
-              <Typography variant="body2" sx={{ ml: 2 }}>
-                Còn {product.stock} sản phẩm
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Rating value={product.rating} precision={0.1} readOnly />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                ({product.reviewCount} đánh giá)
               </Typography>
             </Box>
-          </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<ShoppingCart />}
-              onClick={handleAddToCart}
-              fullWidth
-            >
-              Thêm vào giỏ
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              startIcon={<Share />}
-              onClick={handleShare}
-            >
-              Chia sẻ
-            </Button>
-          </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Typography variant="h4" color="primary" fontWeight="bold">
+                {formatPrice(product.price)}
+              </Typography>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <Typography variant="h6" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+                  {formatPrice(product.originalPrice)}
+                </Typography>
+              )}
+            </Box>
 
-          <Grid container spacing={2}>
-            {[
-              { icon: <LocalShipping />, text: 'Giao hàng miễn phí' },
-              { icon: <Security />, text: 'Bảo hành 24 tháng' },
-              { icon: <Loop />, text: 'Đổi trả trong 30 ngày' },
-            ].map((item, index) => (
-              <Grid item xs={12} sm={4} key={index}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 1,
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                  }}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                {product.description}
+              </Typography>
+            </Box>
+
+            {/* Quantity selector */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Typography variant="body1" fontWeight={600}>
+                Số lượng:
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                <IconButton 
+                  onClick={handleQuantityDecrement}
+                  disabled={quantity <= 1}
+                  size="small"
                 >
-                  {item.icon}
-                  <Typography variant="body2">{item.text}</Typography>
+                  <Remove />
+                </IconButton>
+                <TextField
+                  value={quantity}
+                  onChange={handleQuantityChange}
+                  type="number"
+                  size="small"
+                  sx={{ 
+                    width: 80,
+                    '& .MuiOutlinedInput-root': {
+                      border: 'none',
+                      '& fieldset': { border: 'none' },
+                    }
+                  }}
+                  inputProps={{ min: 1, max: product.stock }}
+                />
+                <IconButton 
+                  onClick={handleQuantityIncrement}
+                  disabled={quantity >= product.stock}
+                  size="small"
+                >
+                  <Add />
+                </IconButton>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {product.stock} sản phẩm có sẵn
+              </Typography>
+            </Box>
+
+            {/* Action buttons */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<ShoppingCart />}
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+                sx={{ flex: 1, py: 1.5 }}
+              >
+                {product.stock === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
+              </Button>
+              <IconButton
+                onClick={() => setIsFavorite(!isFavorite)}
+                sx={{ 
+                  border: 1, 
+                  borderColor: 'divider',
+                  '&:hover': { backgroundColor: 'action.hover' }
+                }}
+              >
+                {isFavorite ? <Favorite color="error" /> : <FavoriteBorder />}
+              </IconButton>
+              <IconButton
+                onClick={handleShare}
+                sx={{ 
+                  border: 1, 
+                  borderColor: 'divider',
+                  '&:hover': { backgroundColor: 'action.hover' }
+                }}
+              >
+                <Share />
+              </IconButton>
+            </Box>
+
+            {/* Product features */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <LocalShipping sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="body2">Miễn phí vận chuyển cho đơn hàng từ 500.000đ</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Security sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="body2">Bảo hành chính hãng {product.specifications?.['Bảo hành'] || '12 tháng'}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Loop sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="body2">Đổi trả trong 30 ngày</Typography>
+              </Box>
+            </Paper>
+          </Box>
+        </Grid>
+      </Grid>
+
+      {/* Product Tabs */}
+      <Box sx={{ mt: 6 }}>
+        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
+          <Tab label="Mô tả" />
+          <Tab label="Thông số kỹ thuật" />
+          <Tab label={`Đánh giá (${product.reviewCount})`} />
+        </Tabs>
+
+        <TabPanel value={tabValue} index={0}>
+          <Typography variant="body1" whiteSpace="pre-line">
+            {product.description}
+          </Typography>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={1}>
+          <Grid container spacing={2}>
+            {Object.entries(product.specifications || {}).map(([key, value]) => (
+              <Grid item xs={12} sm={6} key={key}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                  <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                  <Typography variant="body2" fontWeight={600}>{value}</Typography>
                 </Box>
               </Grid>
             ))}
           </Grid>
-        </Grid>
+        </TabPanel>
 
-        {/* Tabs Section */}
-        <Grid item xs={12}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs
-              value={tabValue}
-              onChange={(_, newValue) => setTabValue(newValue)}
-              aria-label="product tabs"
-            >
-              <Tab label="Thông số kỹ thuật" />
-              <Tab label="Đánh giá" />
-              <Tab label="Sản phẩm liên quan" />
-            </Tabs>
-          </Box>
-
-          <TabPanel value={tabValue} index={0}>
+        <TabPanel value={tabValue} index={2}>
+          {reviewsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reviews.length > 0 ? (
             <List>
-              {Object.entries(product.specifications).map(([key, value]) => (
-                <ListItem key={key} divider>
-                  <ListItemText
-                    primary={key}
-                    secondary={value}
-                    primaryTypographyProps={{ fontWeight: 'bold' }}
-                  />
+              {reviews.map((review) => (
+                <ListItem key={review._id} alignItems="flex-start" sx={{ px: 0 }}>
+                  <Avatar src={review.userAvatar} sx={{ mr: 2 }}>
+                    {review.userName.charAt(0)}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {review.userName}
+                      </Typography>
+                      <Rating value={review.rating} size="small" readOnly sx={{ ml: 1 }} />
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        {formatDate(review.createdAt)}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.primary">
+                      {review.comment}
+                    </Typography>
+                  </Box>
                 </ListItem>
               ))}
             </List>
-          </TabPanel>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                Chưa có đánh giá nào cho sản phẩm này
+              </Typography>
+            </Box>
+          )}
+        </TabPanel>
+      </Box>
 
-          <TabPanel value={tabValue} index={1}>
-            <Grid container spacing={3}>
-              {product.reviews.map((review) => (
-                <Grid item xs={12} key={review.id}>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Avatar src={review.userAvatar} />
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="subtitle1">{review.userName}</Typography>
-                      <Rating value={review.rating} readOnly size="small" />
-                      <Typography variant="body2" paragraph>
-                        {review.comment}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(review.date).toLocaleDateString()}
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <Box sx={{ mt: 8 }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+            Sản phẩm liên quan
+          </Typography>
+          <Grid container spacing={3}>
+            {relatedProducts.map((relatedProduct) => (
+              <Grid item xs={12} sm={6} md={3} key={relatedProduct._id}>
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4,
+                    }
+                  }}
+                  onClick={() => navigate(`/product/${relatedProduct._id}`)}
+                >
+                  <CardMedia
+                    component="img"
+                    height="200"
+                    image={relatedProduct.images?.[0] || '/placeholder-product.jpg'}
+                    alt={relatedProduct.name}
+                  />
+                  <CardContent>
+                    <Typography variant="h6" component="h3" gutterBottom sx={{ 
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}>
+                      {relatedProduct.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Rating value={relatedProduct.rating || 0} size="small" readOnly />
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        ({relatedProduct.reviewCount || 0})
                       </Typography>
                     </Box>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                </Grid>
-              ))}
-            </Grid>
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={2}>
-            <Grid container spacing={2}>
-              {product.relatedProducts.map((relatedProduct) => (
-                <Grid item xs={12} sm={6} md={3} key={relatedProduct.id}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => navigate(`/product/${relatedProduct.id}`)}
-                  >
-                    <CardMedia
-                      component="img"
-                      height="200"
-                      image={relatedProduct.image}
-                      alt={relatedProduct.name}
-                    />
-                    <CardContent>
-                      <Typography
-                        gutterBottom
-                        variant="h6"
-                        component="h3"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {relatedProduct.name}
-                      </Typography>
-                      <Typography variant="h6" color="primary">
-                        {relatedProduct.price.toLocaleString()}đ
-                      </Typography>
-                      <Rating value={relatedProduct.rating} readOnly size="small" />
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </TabPanel>
-        </Grid>
-      </Grid>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+                    <Typography variant="h6" color="primary" fontWeight="bold">
+                      {formatPrice(relatedProduct.price)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
     </Container>
   );
 };
