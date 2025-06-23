@@ -73,6 +73,7 @@ const Orders: React.FC = () => {
     totalPages: 1,
     totalOrders: 0
   });
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -188,7 +189,7 @@ const Orders: React.FC = () => {
             variant="outlined"
             color="success"
             onClick={() => handleConfirmOrder(params.row.id)}
-            disabled={params.row.status === 'Đã hoàn thành'}
+            disabled={params.row.status === 'Đã hoàn thành' || isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Xác nhận
@@ -198,7 +199,7 @@ const Orders: React.FC = () => {
             variant="outlined"
             color="warning"
             onClick={() => handleUpdatePaymentStatus(params.row.id, 'Đã thanh toán')}
-            disabled={params.row.paymentStatus === 'Đã thanh toán'}
+            disabled={params.row.paymentStatus === 'Đã thanh toán' || isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Đã TT
@@ -208,7 +209,7 @@ const Orders: React.FC = () => {
             variant="outlined"
             color="error"
             onClick={() => handleCancelOrder(params.row.id)}
-            disabled={params.row.status === 'Đã hủy'}
+            disabled={params.row.status === 'Đã hủy' || isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Hủy
@@ -216,6 +217,7 @@ const Orders: React.FC = () => {
           <Button
             size="small"
             onClick={() => handleEdit(params.row)}
+            disabled={isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Sửa
@@ -224,6 +226,7 @@ const Orders: React.FC = () => {
             size="small"
             color="error"
             onClick={() => handleDelete(params.row.id)}
+            disabled={isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Xóa
@@ -248,7 +251,9 @@ const Orders: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    setIsActionLoading(true);
     if (!window.confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
+      setIsActionLoading(false);
       return;
     }
 
@@ -256,6 +261,7 @@ const Orders: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        setIsActionLoading(false);
         return;
       }
 
@@ -287,15 +293,18 @@ const Orders: React.FC = () => {
       }
     } finally {
       setLoading(false);
+      setIsActionLoading(false);
     }
   };
 
   // Thao tác nhanh: Xác nhận đơn hàng
   const handleConfirmOrder = async (id: string) => {
+    setIsActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        setIsActionLoading(false);
         return;
       }
 
@@ -322,12 +331,16 @@ const Orders: React.FC = () => {
       } else {
         setError('Có lỗi xảy ra khi xác nhận đơn hàng');
       }
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   // Thao tác nhanh: Hủy đơn hàng
   const handleCancelOrder = async (id: string) => {
+    setIsActionLoading(true);
     if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+      setIsActionLoading(false);
       return;
     }
 
@@ -335,6 +348,7 @@ const Orders: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        setIsActionLoading(false);
         return;
       }
 
@@ -360,15 +374,19 @@ const Orders: React.FC = () => {
       } else {
         setError('Có lỗi xảy ra khi hủy đơn hàng');
       }
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   // Thao tác nhanh: Cập nhật trạng thái thanh toán
   const handleUpdatePaymentStatus = async (id: string, paymentStatus: string) => {
+    setIsActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Vui lòng đăng nhập để thực hiện thao tác này');
+        setIsActionLoading(false);
         return;
       }
 
@@ -394,6 +412,8 @@ const Orders: React.FC = () => {
       } else {
         setError('Có lỗi xảy ra khi cập nhật trạng thái thanh toán');
       }
+    } finally {
+      setIsActionLoading(false);
     }
   };
 

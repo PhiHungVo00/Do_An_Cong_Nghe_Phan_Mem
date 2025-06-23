@@ -89,7 +89,7 @@ const Cart: React.FC = () => {
           quantity: item.quantity,
           price: item.discount ? item.price * (1 - item.discount / 100) : item.price,
           image: item.image || '',
-          brand: item.brand || ''
+          brand: item.brand || '',
         })),
         shippingAddress,
         paymentMethod,
@@ -99,11 +99,11 @@ const Cart: React.FC = () => {
       await orderAPI.create(orderData);
       
       clearCart();
-    setIsCheckoutDialogOpen(false);
-    enqueueSnackbar('Đặt hàng thành công!', {
-      variant: 'success',
-    });
-    navigate('/order-history');
+      setIsCheckoutDialogOpen(false);
+      enqueueSnackbar('Đặt hàng thành công!', {
+        variant: 'success',
+      });
+      navigate('/order-history', { state: { reload: true } });
     } catch (error) {
       enqueueSnackbar('Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.', {
         variant: 'error',

@@ -35,7 +35,7 @@ import {
   Receipt,
 } from '@mui/icons-material';
 import { orderAPI } from '../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface OrderItem {
   _id: string;
@@ -63,6 +63,7 @@ interface Order {
 
 const OrderHistory: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +75,7 @@ const OrderHistory: React.FC = () => {
         setLoading(true);
         setError(null);
         const response = await orderAPI.getUserOrders();
-        setOrders(response.data || []);
+        setOrders(response.data || response || []);
       } catch (err) {
         setError('Không thể tải lịch sử đơn hàng. Vui lòng thử lại sau.');
         console.error('Error loading orders:', err);
@@ -82,9 +83,8 @@ const OrderHistory: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchOrders();
-  }, []);
+  }, [location.state]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
