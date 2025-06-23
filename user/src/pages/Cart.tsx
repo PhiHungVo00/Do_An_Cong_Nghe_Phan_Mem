@@ -99,11 +99,11 @@ const Cart: React.FC = () => {
       await orderAPI.create(orderData);
       
       clearCart();
-      setIsCheckoutDialogOpen(false);
-      enqueueSnackbar('Đặt hàng thành công!', {
-        variant: 'success',
-      });
-      navigate('/order-history');
+    setIsCheckoutDialogOpen(false);
+    enqueueSnackbar('Đặt hàng thành công!', {
+      variant: 'success',
+    });
+    navigate('/order-history');
     } catch (error) {
       enqueueSnackbar('Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.', {
         variant: 'error',
@@ -141,8 +141,8 @@ const Cart: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <ShoppingCart sx={{ mr: 2, fontSize: 40, color: 'primary.main' }} />
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Giỏ hàng
-        </Typography>
+        Giỏ hàng
+      </Typography>
       </Box>
 
       {cartItems.length === 0 ? (
@@ -168,37 +168,37 @@ const Cart: React.FC = () => {
           <Grid item xs={12} lg={8}>
             <Paper elevation={2}>
               <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Sản phẩm</TableCell>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Sản phẩm</TableCell>
                       <TableCell align="right">Đơn giá</TableCell>
-                      <TableCell align="center">Số lượng</TableCell>
+                    <TableCell align="center">Số lượng</TableCell>
                       <TableCell align="right">Thành tiền</TableCell>
-                      <TableCell align="center">Thao tác</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
+                    <TableCell align="center">Thao tác</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                     {cartItems.map((item: any) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Card sx={{ width: 80, height: 80 }}>
                               <CardMedia
-                                component="img"
+                            component="img"
                                 height="80"
                                 image={item.images?.[0] || '/placeholder-product.jpg'}
-                                alt={item.name}
+                            alt={item.name}
                                 sx={{ objectFit: 'cover' }}
-                              />
+                          />
                             </Card>
-                            <Box>
+                          <Box>
                               <Typography variant="subtitle1" fontWeight={600}>
                                 {item.name}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {item.brand}
-                              </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {item.brand}
+                            </Typography>
                               {item.discount && item.discount > 0 && (
                                 <Chip
                                   label={`-${item.discount}%`}
@@ -207,82 +207,82 @@ const Cart: React.FC = () => {
                                   sx={{ mt: 0.5 }}
                                 />
                               )}
-                            </Box>
                           </Box>
-                        </TableCell>
-                        <TableCell align="right">
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
                           {item.discount && item.discount > 0 ? (
                             <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
-                              >
+                            <Typography
+                              variant="body2"
+                              sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
+                            >
                                 {formatPrice(item.price)}
                               </Typography>
                               <Typography variant="body1" color="error" fontWeight="bold">
                                 {formatPrice(getDiscountedPrice(item))}
-                              </Typography>
+                            </Typography>
                             </Box>
                           ) : (
                             <Typography variant="body1" fontWeight="bold">
                               {formatPrice(item.price)}
                             </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
                               disabled={item.quantity <= 1}
                               sx={{ 
                                 border: 1, 
                                 borderColor: 'divider',
                                 '&:hover': { backgroundColor: 'action.hover' }
                               }}
-                            >
-                              <RemoveIcon />
-                            </IconButton>
+                          >
+                            <RemoveIcon />
+                          </IconButton>
                             <Typography sx={{ mx: 2, minWidth: 30, textAlign: 'center' }}>
                               {item.quantity}
                             </Typography>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          <IconButton
+                            size="small"
+                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
                               disabled={item.quantity >= (item.stock || 99)}
                               sx={{ 
                                 border: 1, 
                                 borderColor: 'divider',
                                 '&:hover': { backgroundColor: 'action.hover' }
                               }}
-                            >
-                              <AddIcon />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
+                          >
+                            <AddIcon />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
                           <Typography variant="body1" fontWeight="bold" color="primary">
                             {formatPrice(getDiscountedPrice(item) * item.quantity)}
                           </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            color="error"
-                            onClick={() => handleRemoveFromCart(item.id)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          color="error"
+                          onClick={() => handleRemoveFromCart(item.id)}
                             sx={{ 
                               border: 1, 
                               borderColor: 'error.main',
                               '&:hover': { backgroundColor: 'error.light' }
                             }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
             </Paper>
           </Grid>
 
@@ -291,8 +291,8 @@ const Cart: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <Receipt sx={{ mr: 1, color: 'primary.main' }} />
                 <Typography variant="h6" fontWeight={600}>
-                  Tổng đơn hàng
-                </Typography>
+                Tổng đơn hàng
+              </Typography>
               </Box>
               
               <Box sx={{ mb: 3 }}>
@@ -368,30 +368,30 @@ const Cart: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1 }}>
-            <TextField
-              fullWidth
-              label="Địa chỉ giao hàng"
-              value={shippingAddress}
-              onChange={(e) => setShippingAddress(e.target.value)}
-              multiline
-              rows={3}
+          <TextField
+            fullWidth
+            label="Địa chỉ giao hàng"
+            value={shippingAddress}
+            onChange={(e) => setShippingAddress(e.target.value)}
+            multiline
+            rows={3}
               sx={{ mb: 3 }}
               placeholder="Nhập địa chỉ giao hàng chi tiết..."
-            />
+          />
             
             <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>Phương thức thanh toán</InputLabel>
-              <Select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                label="Phương thức thanh toán"
-              >
-                <MenuItem value="cod">Thanh toán khi nhận hàng (COD)</MenuItem>
+            <InputLabel>Phương thức thanh toán</InputLabel>
+            <Select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              label="Phương thức thanh toán"
+            >
+              <MenuItem value="cod">Thanh toán khi nhận hàng (COD)</MenuItem>
                 <MenuItem value="bank">Chuyển khoản ngân hàng</MenuItem>
-                <MenuItem value="momo">Ví MoMo</MenuItem>
+              <MenuItem value="momo">Ví MoMo</MenuItem>
                 <MenuItem value="vnpay">VNPay</MenuItem>
-              </Select>
-            </FormControl>
+            </Select>
+          </FormControl>
 
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2">

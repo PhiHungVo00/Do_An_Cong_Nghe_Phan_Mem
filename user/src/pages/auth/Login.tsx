@@ -29,7 +29,7 @@ import {
   ElectricalServices,
 } from '@mui/icons-material';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { mockUsers } from '../../data/mockUsers';
+import { authAPI } from '../../services/api';
 
 interface User {
   email: string;
@@ -44,7 +44,7 @@ const Login: React.FC = () => {
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/';
   const [loginMethod, setLoginMethod] = useState<'email' | 'otp'>('email');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
@@ -58,91 +58,35 @@ const Login: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      console.log('Attempting login with:', { email, password });
-      console.log('Available users:', mockUsers);
-
-      // Kiểm tra thông tin đăng nhập
-      const user = mockUsers.find((u: User) => u.email === email && u.password === password);
-      console.log('Found user:', user);
-      
-      if (!user) {
-        throw new Error('Email hoặc mật khẩu không đúng');
+      // Gọi API đăng nhập thật sự, gửi cả username và email
+      const payload: any = {};
+      if (identifier.includes('@')) {
+        payload.email = identifier;
+      } else {
+        payload.username = identifier;
       }
-
-      // Lưu thông tin đăng nhập
-      const token = btoa(JSON.stringify({ userId: user.id, email: user.email }));
+      payload.password = password;
+      const { token, user } = await authAPI.login(payload);
+      if (!token || !user) {
+        throw new Error('Đăng nhập thất bại. Vui lòng thử lại.');
+      }
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      }));
-
-      console.log('Login successful, navigating to:', from);
+      localStorage.setItem('user', JSON.stringify(user));
       navigate(from, { replace: true });
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng thử lại.');
+    } catch (err: any) {
+      setError(err?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSendOtp = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Kiểm tra email tồn tại
-      const user = mockUsers.find((u: User) => u.email === email);
-      if (!user) {
-        throw new Error('Email không tồn tại trong hệ thống');
-      }
-
-      // Giả lập gửi OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('OTP gửi đến email:', email, 'là: 123456');
-      setOtpSent(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể gửi mã OTP. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Chức năng đăng nhập bằng OTP hiện chưa hỗ trợ. Vui lòng sử dụng email và mật khẩu.');
   };
 
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Kiểm tra email tồn tại
-      const user = mockUsers.find((u: User) => u.email === email);
-      if (!user) {
-        throw new Error('Email không tồn tại trong hệ thống');
-      }
-
-      // Kiểm tra OTP (giả lập OTP là 123456)
-      if (otp !== '123456') {
-        throw new Error('Mã OTP không đúng');
-      }
-
-      // Lưu thông tin đăng nhập
-      const token = btoa(JSON.stringify({ userId: user.id, email: user.email }));
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      }));
-
-      // Chuyển hướng về trang trước đó hoặc trang chủ
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Mã OTP không hợp lệ. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Chức năng đăng nhập bằng OTP hiện chưa hỗ trợ. Vui lòng sử dụng email và mật khẩu.');
   };
 
   const handleGoogleLogin = async () => {
@@ -307,10 +251,10 @@ const Login: React.FC = () => {
               <form onSubmit={handleEmailLogin}>
                 <TextField
                   fullWidth
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  label="Email hoặc Tên đăng nhập"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                   sx={{ mb: 3 }}
                   InputProps={{
@@ -371,8 +315,8 @@ const Login: React.FC = () => {
                   fullWidth
                   label="Email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                   sx={{ mb: 3 }}
                   InputProps={{
@@ -388,7 +332,7 @@ const Login: React.FC = () => {
                     fullWidth
                     variant="contained"
                     onClick={handleSendOtp}
-                    disabled={isLoading || !email}
+                    disabled={isLoading || !identifier}
                     sx={{ 
                       mb: 3,
                       py: 1.5,

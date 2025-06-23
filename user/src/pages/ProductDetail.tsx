@@ -186,18 +186,18 @@ const ProductDetail: React.FC = () => {
       }, quantity);
       enqueueSnackbar(`Đã thêm ${product.name} vào giỏ hàng`, {
         variant: 'success',
-      });
+    });
     }
   };
 
   const handleShare = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: product?.name,
-          text: product?.description,
-          url: window.location.href,
-        });
+      await navigator.share({
+        title: product?.name,
+        text: product?.description,
+        url: window.location.href,
+      });
       } else {
         // Fallback for browsers that don't support Web Share API
         navigator.clipboard.writeText(window.location.href);
@@ -265,7 +265,7 @@ const ProductDetail: React.FC = () => {
           <Box sx={{ position: 'relative' }}>
             <Paper 
               elevation={2}
-              sx={{ 
+              sx={{
                 borderRadius: 2,
                 overflow: 'hidden',
                 mb: 2
@@ -297,7 +297,7 @@ const ProductDetail: React.FC = () => {
             
             {/* Thumbnail images */}
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {product.images.map((image, index) => (
+            {product.images.map((image, index) => (
                 <Paper
                   key={index}
                   elevation={selectedImage === index ? 4 : 1}
@@ -322,9 +322,9 @@ const ProductDetail: React.FC = () => {
                       height: 80,
                       objectFit: 'cover',
                     }}
-                  />
+                />
                 </Paper>
-              ))}
+            ))}
             </Box>
           </Box>
         </Grid>
@@ -333,15 +333,15 @@ const ProductDetail: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Box sx={{ position: 'sticky', top: 20 }}>
             <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-              {product.name}
-            </Typography>
+            {product.name}
+          </Typography>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Rating value={product.rating} precision={0.1} readOnly />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                ({product.reviewCount} đánh giá)
-              </Typography>
-            </Box>
+              ({product.reviewCount} đánh giá)
+            </Typography>
+          </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
               <Typography variant="h4" color="primary" fontWeight="bold">
@@ -350,21 +350,21 @@ const ProductDetail: React.FC = () => {
               {product.originalPrice && product.originalPrice > product.price && (
                 <Typography variant="h6" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
                   {formatPrice(product.originalPrice)}
-                </Typography>
+          </Typography>
               )}
             </Box>
 
             <Box sx={{ mb: 3 }}>
               <Typography variant="body1" color="text.secondary" paragraph>
-                {product.description}
-              </Typography>
+            {product.description}
+          </Typography>
             </Box>
 
             {/* Quantity selector */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
               <Typography variant="body1" fontWeight={600}>
-                Số lượng:
-              </Typography>
+              Số lượng:
+            </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', border: 1, borderColor: 'divider', borderRadius: 1 }}>
                 <IconButton 
                   onClick={handleQuantityDecrement}
@@ -373,9 +373,9 @@ const ProductDetail: React.FC = () => {
                 >
                   <Remove />
                 </IconButton>
-                <TextField
-                  value={quantity}
-                  onChange={handleQuantityChange}
+              <TextField
+                value={quantity}
+                onChange={handleQuantityChange}
                   type="number"
                   size="small"
                   sx={{ 
@@ -385,12 +385,12 @@ const ProductDetail: React.FC = () => {
                       '& fieldset': { border: 'none' },
                     }
                   }}
-                  inputProps={{ min: 1, max: product.stock }}
+                inputProps={{ min: 1, max: product.stock }}
                 />
                 <IconButton 
                   onClick={handleQuantityIncrement}
                   disabled={quantity >= product.stock}
-                  size="small"
+                size="small"
                 >
                   <Add />
                 </IconButton>
@@ -398,20 +398,20 @@ const ProductDetail: React.FC = () => {
               <Typography variant="body2" color="text.secondary">
                 {product.stock} sản phẩm có sẵn
               </Typography>
-            </Box>
+          </Box>
 
             {/* Action buttons */}
             <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<ShoppingCart />}
-                onClick={handleAddToCart}
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<ShoppingCart />}
+              onClick={handleAddToCart}
                 disabled={product.stock === 0}
                 sx={{ flex: 1, py: 1.5 }}
-              >
+            >
                 {product.stock === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
-              </Button>
+            </Button>
               <IconButton
                 onClick={() => setIsFavorite(!isFavorite)}
                 sx={{ 
@@ -423,7 +423,7 @@ const ProductDetail: React.FC = () => {
                 {isFavorite ? <Favorite color="error" /> : <FavoriteBorder />}
               </IconButton>
               <IconButton
-                onClick={handleShare}
+              onClick={handleShare}
                 sx={{ 
                   border: 1, 
                   borderColor: 'divider',
@@ -484,7 +484,7 @@ const ProductDetail: React.FC = () => {
           {reviewsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
-            </Box>
+          </Box>
           ) : reviews.length > 0 ? (
             <List>
               {reviews.map((review) => (
@@ -516,7 +516,7 @@ const ProductDetail: React.FC = () => {
               </Typography>
             </Box>
           )}
-        </TabPanel>
+          </TabPanel>
       </Box>
 
       {/* Related Products */}
@@ -528,33 +528,33 @@ const ProductDetail: React.FC = () => {
           <Grid container spacing={3}>
             {relatedProducts.map((relatedProduct) => (
               <Grid item xs={12} sm={6} md={3} key={relatedProduct._id}>
-                <Card 
-                  sx={{ 
-                    cursor: 'pointer',
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     '&:hover': {
                       transform: 'translateY(-4px)',
                       boxShadow: 4,
                     }
-                  }}
+                    }}
                   onClick={() => navigate(`/product/${relatedProduct._id}`)}
-                >
-                  <CardMedia
-                    component="img"
-                    height="200"
+                  >
+                    <CardMedia
+                      component="img"
+                      height="200"
                     image={relatedProduct.images?.[0] || '/placeholder-product.jpg'}
-                    alt={relatedProduct.name}
-                  />
-                  <CardContent>
+                      alt={relatedProduct.name}
+                    />
+                    <CardContent>
                     <Typography variant="h6" component="h3" gutterBottom sx={{ 
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
                     }}>
-                      {relatedProduct.name}
-                    </Typography>
+                        {relatedProduct.name}
+                      </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <Rating value={relatedProduct.rating || 0} size="small" readOnly />
                       <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
@@ -564,11 +564,11 @@ const ProductDetail: React.FC = () => {
                     <Typography variant="h6" color="primary" fontWeight="bold">
                       {formatPrice(relatedProduct.price)}
                     </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
         </Box>
       )}
     </Container>

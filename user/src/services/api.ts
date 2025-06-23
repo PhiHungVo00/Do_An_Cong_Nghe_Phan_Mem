@@ -71,13 +71,13 @@ export const productAPI = {
 // Auth API
 export const authAPI = {
   // Login
-  login: async (email: string, password: string) => {
+  login: async (payload: { email?: string; username?: string; password: string }) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
     return handleResponse(response);
   },

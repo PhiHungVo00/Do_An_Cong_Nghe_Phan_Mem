@@ -127,13 +127,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           image: item.image,
           brand: item.brand
         })),
-        shippingAddress,
+      shippingAddress,
         paymentMethod,
         totalAmount: getCartTotal()
-      };
+    };
 
       await orderAPI.create(orderData);
-      setCartItems([]);
+    setCartItems([]);
       await loadOrderHistory(); // Reload order history
     } catch (error) {
       console.error('Error placing order:', error);
