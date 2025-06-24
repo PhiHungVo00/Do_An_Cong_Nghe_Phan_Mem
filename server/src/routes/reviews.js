@@ -39,4 +39,42 @@ router.post('/:id/reply', auth, async (req, res) => {
   }
 });
 
+// Tạo đánh giá shop
+router.post('/shop', auth, async (req, res) => {
+  try {
+    const { rating, content } = req.body;
+    if (!rating || !content) {
+      return res.status(400).json({ message: 'Thiếu thông tin đánh giá' });
+    }
+    const review = new Review({
+      userId: req.user._id,
+      customerName: req.user.fullName || req.user.email,
+      customerAvatar: req.user.avatar || '',
+      rating,
+      content,
+      // Không có productId
+    });
+    await review.save();
+    res.status(201).json({ message: 'Đánh giá shop thành công', review });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi server khi tạo đánh giá shop' });
+  }
+});
+
+// Lấy danh sách đánh giá shop
+router.get('/shop', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const filter = { productId: { $exists: false } };
+    const total = await Review.countDocuments(filter);
+    const reviews = await Review.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+    res.json({ reviews, total });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi server khi lấy đánh giá shop' });
+  }
+});
+
 module.exports = router; 

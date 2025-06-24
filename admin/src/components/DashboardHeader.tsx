@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Avatar, Button, Stack, Snackbar, Menu, MenuItem, Badge, Popover, List, ListItem, ListItemText, ListItemAvatar, Divider, TextField, Paper, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { MailOutline, NotificationsNone, CalendarMonth, Download, Menu as MenuIcon, InsertDriveFile, AccountCircle, CheckCircle, Send, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -77,7 +77,7 @@ const messages = [
   }
 ];
 
-const notifications = [
+const initialNotifications = [
   {
     id: 1,
     type: 'success',
@@ -306,10 +306,13 @@ const DashboardHeader: React.FC = () => {
   const [mailAnchorEl, setMailAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedChat, setSelectedChat] = useState<typeof messages[0] | null>(null);
-  const [selectedNotification, setSelectedNotification] = useState<typeof notifications[0] | null>(null);
-  const unreadCount = messages.filter(m => !m.read).length;
+  const [notifications, setNotifications] = useState(initialNotifications);
   const unreadNotifications = notifications.length;
+  const [selectedNotification, setSelectedNotification] = useState<typeof notifications[0] | null>(null);
   const navigate = useNavigate();
+  const [orderCount, setOrderCount] = useState(0);
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
 
   const handleExport = () => setSnackbarOpen(true);
   const handleSnackbarClose = () => setSnackbarOpen(false);
@@ -362,6 +365,55 @@ const DashboardHeader: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    // Lấy số lượng đơn hàng ban đầu
+    const fetchInitialOrders = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/api/orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (data.orders) setOrderCount(data.orders.length);
+      } catch (err) {}
+    };
+    fetchInitialOrders();
+
+    // Polling đơn hàng mới
+    const interval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/api/orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (data.orders && data.orders.length > orderCount) {
+          setNotifications([
+            {
+              id: Date.now(),
+              type: 'success',
+              title: 'Đơn hàng mới',
+              content: 'Bạn có đơn hàng mới từ khách hàng!',
+              time: 'Vừa xong',
+              icon: '🛍️'
+            },
+            ...notificationsRef.current
+          ]);
+          setOrderCount(data.orders.length);
+        } else if (data.orders) {
+          setOrderCount(data.orders.length);
+        }
+      } catch (err) {}
+    }, 15000); // 15 giây kiểm tra 1 lần
+    return () => clearInterval(interval);
+  }, [orderCount]);
+
   return (
     <Box sx={{ mb: 4 }}>
       {/* Top row: Title + icons */}
@@ -372,7 +424,7 @@ const DashboardHeader: React.FC = () => {
             sx={{ bgcolor: '#F6F8FB', mr: 1 }}
             onClick={handleMailClick}
           >
-            <Badge badgeContent={unreadCount} color="error">
+            <Badge badgeContent={unreadNotifications} color="error">
               <MailOutline sx={{ color: '#6C63FF' }} />
             </Badge>
           </IconButton>
@@ -399,7 +451,7 @@ const DashboardHeader: React.FC = () => {
             }}
           >
             <Box sx={{ p: 2, borderBottom: '1px solid #eee' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>Tin nhắn ({unreadCount} mới)</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>Tin nhắn ({unreadNotifications} mới)</Typography>
             </Box>
             <List sx={{ p: 0 }}>
               {messages.map((message, index) => (

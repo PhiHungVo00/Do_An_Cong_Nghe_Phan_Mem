@@ -38,7 +38,7 @@ const DeliveryAddressBar: React.FC<DeliveryAddressBarProps> = ({
         <Button
           startIcon={<LocationOn color="primary" />}
           endIcon={<KeyboardArrowDown />}
-          onClick={() => navigate('/delivery-address')}
+          onClick={onChangeAddress ? onChangeAddress : () => navigate('/delivery-address')}
           sx={{
             textTransform: 'none',
             color: 'text.primary',

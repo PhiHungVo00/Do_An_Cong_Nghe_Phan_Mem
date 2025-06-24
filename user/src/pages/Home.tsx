@@ -37,6 +37,9 @@ import {
   Support as SupportIcon,
   TrendingUp,
   Star,
+  LocationOn,
+  KeyboardArrowDown,
+  MyLocation,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Carousel from 'react-material-ui-carousel';
@@ -48,6 +51,13 @@ import ChallengeCard from '../components/home/ChallengeCard';
 import EventCard from '../components/home/EventCard';
 import { Images } from '../assets/index';
 import { productAPI, salesEventAPI } from '../services/api';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import CloseIcon from '@mui/icons-material/Close';
+import Skeleton from '@mui/material/Skeleton';
 
 const StyledCarousel = styled(Carousel)(({ theme }) => ({
   '& .MuiIconButton-root': {
@@ -89,8 +99,15 @@ const Home: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('268 Lý Thường Kiệt, Phường 14, Quận 10, Hồ Chí Minh');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>(localStorage.getItem('deliveryAddress') || 'Chưa có địa chỉ');
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [addressDetails, setAddressDetails] = useState({
+    streetNumber: '',
+    streetName: '',
+    ward: '',
+    district: '',
+    city: '',
+  });
   
   // State cho dữ liệu từ API
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
@@ -99,6 +116,158 @@ const Home: React.FC = () => {
   const [salesEvents, setSalesEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Thêm state cho địa chỉ giao hàng
+  const [openAddressDialog, setOpenAddressDialog] = useState(false);
+  const [tempAddress, setTempAddress] = useState(deliveryAddress);
+
+  const handleToggleFavorite = (productId: string) => {
+    setFavorites(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleAddToCart = (productId: string) => {
+    // TODO: Implement add to cart functionality
+    console.log('Add to cart:', productId);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleJoinChallenge = (challengeId: string) => {
+    // TODO: Implement join challenge functionality
+    console.log('Join challenge:', challengeId);
+  };
+
+  const handleRegisterEvent = (eventId: string) => {
+    // TODO: Implement register event functionality
+    console.log('Register event:', eventId);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
+  const renderProductCard = (product: any) => (
+    <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
+      <Box sx={{ position: 'relative', p: 2 }}>
+        <img 
+          src={product.images?.[0] || '/placeholder-product.jpg'} 
+          alt={product.name}
+          loading="lazy"
+          style={{ 
+            width: '100%', 
+            height: 200, 
+            objectFit: 'cover',
+            borderRadius: theme.shape.borderRadius 
+          }}
+        />
+        {product.discount > 0 && (
+          <Chip
+            label={`-${product.discount}%`}
+            color="error"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              fontWeight: 'bold'
+            }}
+          />
+        )}
+        <IconButton
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            '&:hover': { backgroundColor: 'white' }
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleFavorite(product._id);
+          }}
+        >
+          <Favorite 
+            color={favorites.includes(product._id) ? 'error' : 'action'} 
+          />
+        </IconButton>
+      </Box>
+      
+      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" component="h3" gutterBottom sx={{ 
+          fontWeight: 600,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {product.name}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <Star sx={{ color: 'warning.main', fontSize: 16, mr: 0.5 }} />
+          <Typography variant="body2" color="text.secondary">
+            {product.rating || 0} ({product.reviewCount || 0} đánh giá)
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Typography variant="h6" color="primary" fontWeight="bold">
+            {formatPrice(product.price)}
+          </Typography>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
+              {formatPrice(product.originalPrice)}
+            </Typography>
+          )}
+        </Box>
+        
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToCart(product._id);
+          }}
+          sx={{ mt: 'auto' }}
+        >
+          Thêm vào giỏ
+        </Button>
+      </Box>
+    </StyledProductCard>
+  );
+
+  const handleOpenAddressDialog = () => {
+    setTempAddress(deliveryAddress);
+    setOpenAddressDialog(true);
+  };
+  const handleCloseAddressDialog = () => setOpenAddressDialog(false);
+  const handleSaveAddress = () => {
+    const fullAddress = `${addressDetails.streetNumber} ${addressDetails.streetName}, ${addressDetails.ward}, ${addressDetails.district}, ${addressDetails.city}`;
+    setDeliveryAddress(fullAddress);
+    localStorage.setItem('deliveryAddress', fullAddress);
+    setOpenAddressDialog(false);
+    // Reset form
+    setAddressDetails({
+      streetNumber: '',
+      streetName: '',
+      ward: '',
+      district: '',
+      city: '',
+    });
+  };
 
   // Fetch dữ liệu từ API
   useEffect(() => {
@@ -266,137 +435,19 @@ const Home: React.FC = () => {
     },
   ];
 
-  const handleToggleFavorite = (productId: string) => {
-    setFavorites(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  const handleAddToCart = (productId: string) => {
-    // TODO: Implement add to cart functionality
-    console.log('Add to cart:', productId);
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  const handleJoinChallenge = (challengeId: string) => {
-    // TODO: Implement join challenge functionality
-    console.log('Join challenge:', challengeId);
-  };
-
-  const handleRegisterEvent = (eventId: string) => {
-    // TODO: Implement register event functionality
-    console.log('Register event:', eventId);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(price);
-  };
-
-  const renderProductCard = (product: any) => (
-    <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
-      <Box sx={{ position: 'relative', p: 2 }}>
-        <img 
-          src={product.images?.[0] || '/placeholder-product.jpg'} 
-          alt={product.name}
-          style={{ 
-            width: '100%', 
-            height: 200, 
-            objectFit: 'cover',
-            borderRadius: theme.shape.borderRadius 
-          }}
-        />
-        {product.discount > 0 && (
-          <Chip
-            label={`-${product.discount}%`}
-            color="error"
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              fontWeight: 'bold'
-            }}
-          />
-        )}
-        <IconButton
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            '&:hover': { backgroundColor: 'white' }
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleFavorite(product._id);
-          }}
-        >
-          <Favorite 
-            color={favorites.includes(product._id) ? 'error' : 'action'} 
-          />
-        </IconButton>
-      </Box>
-      
-      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h6" component="h3" gutterBottom sx={{ 
-          fontWeight: 600,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {product.name}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Star sx={{ color: 'warning.main', fontSize: 16, mr: 0.5 }} />
-          <Typography variant="body2" color="text.secondary">
-            {product.rating || 0} ({product.reviewCount || 0} đánh giá)
-          </Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Typography variant="h6" color="primary" fontWeight="bold">
-            {formatPrice(product.price)}
-          </Typography>
-          {product.originalPrice && product.originalPrice > product.price && (
-            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
-              {formatPrice(product.originalPrice)}
-            </Typography>
-          )}
-        </Box>
-        
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddToCart(product._id);
-          }}
-          sx={{ mt: 'auto' }}
-        >
-          Thêm vào giỏ
-        </Button>
-      </Box>
-    </StyledProductCard>
-  );
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress size={60} />
+        <Grid container spacing={3}>
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <Grid item xs={12} sm={6} md={3} key={idx}>
+              <Skeleton variant="rectangular" height={250} sx={{ borderRadius: 2, mb: 2 }} />
+              <Skeleton variant="text" width="80%" />
+              <Skeleton variant="text" width="60%" />
+              <Skeleton variant="rounded" width="100%" height={36} sx={{ mt: 2 }} />
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }
@@ -414,7 +465,94 @@ const Home: React.FC = () => {
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Thanh địa chỉ giao hàng */}
-      <DeliveryAddressBar address={deliveryAddress} />
+        <DeliveryAddressBar address={deliveryAddress} onChangeAddress={handleOpenAddressDialog} />
+
+        <Dialog open={openAddressDialog} onClose={handleCloseAddressDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            Cập nhật địa chỉ giao hàng
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseAddressDialog}
+              sx={{ position: 'absolute', right: 8, top: 8 }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Số nhà"
+                    value={addressDetails.streetNumber}
+                    onChange={(e) => setAddressDetails(prev => ({ ...prev, streetNumber: e.target.value }))}
+                    placeholder="Ví dụ: 123"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={8}>
+                  <TextField
+                    fullWidth
+                    label="Tên đường"
+                    value={addressDetails.streetName}
+                    onChange={(e) => setAddressDetails(prev => ({ ...prev, streetName: e.target.value }))}
+                    placeholder="Ví dụ: Đường Nguyễn Văn Linh"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Phường/Xã"
+                    value={addressDetails.ward}
+                    onChange={(e) => setAddressDetails(prev => ({ ...prev, ward: e.target.value }))}
+                    placeholder="Ví dụ: Phường Tân Thuận Tây"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Quận/Huyện"
+                    value={addressDetails.district}
+                    onChange={(e) => setAddressDetails(prev => ({ ...prev, district: e.target.value }))}
+                    placeholder="Ví dụ: Quận 7"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Tỉnh/Thành phố"
+                    value={addressDetails.city}
+                    onChange={(e) => setAddressDetails(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Ví dụ: TP. Hồ Chí Minh"
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Hoặc tìm kiếm trên bản đồ:
+              </Typography>
+
+              <TextField
+                fullWidth
+                placeholder="Tìm kiếm địa chỉ trên bản đồ..."
+                value={tempAddress}
+                onChange={(e) => setTempAddress(e.target.value)}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseAddressDialog}>Hủy</Button>
+            <Button 
+              onClick={handleSaveAddress} 
+              variant="contained"
+              disabled={!addressDetails.streetNumber || !addressDetails.streetName || !addressDetails.ward || !addressDetails.district || !addressDetails.city}
+            >
+              Lưu
+            </Button>
+          </DialogActions>
+        </Dialog>
 
       {/* Thanh tìm kiếm */}
       <Container maxWidth="lg" sx={{ my: 2 }}>
@@ -607,9 +745,9 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {(bestSellers || []).map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product._id}>
-                {renderProductCard(product)}
+              {(bestSellers || []).map((product) => (
+                <Grid item xs={12} sm={6} md={3} key={product._id}>
+                  {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -666,9 +804,9 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {(onSaleProducts || []).map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product._id}>
-                {renderProductCard(product)}
+              {(onSaleProducts || []).map((product) => (
+                <Grid item xs={12} sm={6} md={3} key={product._id}>
+                  {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -773,9 +911,9 @@ const Home: React.FC = () => {
             </Typography>
           </Box>
           <Grid container spacing={3}>
-            {(recentlyViewed || []).map((product) => (
+              {(recentlyViewed || []).map((product) => (
               <Grid item xs={12} sm={6} md={3} key={product.id}>
-                {renderProductCard(product)}
+                  {renderProductCard(product)}
               </Grid>
             ))}
           </Grid>
@@ -820,10 +958,10 @@ const Home: React.FC = () => {
           {favorites.length > 0 ? (
             <Grid container spacing={3}>
               {featuredProducts
-                .filter((product: any) => favorites.includes(product._id))
-                .map((product: any) => (
-                  <Grid item xs={12} sm={6} md={3} key={product._id}>
-                    {renderProductCard(product)}
+                  .filter((product: any) => favorites.includes(product._id))
+                  .map((product: any) => (
+                    <Grid item xs={12} sm={6} md={3} key={product._id}>
+                      {renderProductCard(product)}
                   </Grid>
                 ))}
             </Grid>
@@ -953,13 +1091,13 @@ const Home: React.FC = () => {
             </Button>
           </Box>
           <Grid container spacing={3}>
-            {(salesEvents || []).map((event) => (
-              <Grid item xs={12} sm={6} md={3} key={event._id}>
+              {(salesEvents || []).map((event) => (
+                <Grid item xs={12} sm={6} md={3} key={event._id}>
                 <EventCard
                   {...event}
                   type="event"
                   buttonText="Đăng ký tham gia"
-                  onClick={() => handleRegisterEvent(event._id)}
+                    onClick={() => handleRegisterEvent(event._id)}
                 />
               </Grid>
             ))}

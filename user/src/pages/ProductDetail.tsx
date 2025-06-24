@@ -113,6 +113,10 @@ const ProductDetail: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number | null>(null);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -481,6 +485,55 @@ const ProductDetail: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
+          {/* Form viết đánh giá */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>Viết đánh giá của bạn</Typography>
+            <Rating
+              value={reviewRating}
+              onChange={(_, newValue) => setReviewRating(newValue)}
+              size="large"
+            />
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
+              label="Nhận xét"
+              value={reviewComment}
+              onChange={e => setReviewComment(e.target.value)}
+              sx={{ mt: 2 }}
+            />
+            {reviewError && (
+              <Typography color="error" sx={{ mt: 1 }}>{reviewError}</Typography>
+            )}
+            <Button
+              variant="contained"
+              sx={{ mt: 2 }}
+              disabled={!reviewRating || !reviewComment || reviewSubmitting}
+              onClick={async () => {
+                setReviewSubmitting(true);
+                setReviewError(null);
+                try {
+                  await reviewAPI.create({
+                    productId: product._id,
+                    rating: reviewRating as number,
+                    comment: reviewComment,
+                  });
+                  setReviewRating(null);
+                  setReviewComment('');
+                  // Reload reviews
+                  const reviewsData = await reviewAPI.getProductReviews(product._id);
+                  setReviews(reviewsData.data || []);
+                } catch (err: any) {
+                  setReviewError(err.message || 'Gửi đánh giá thất bại');
+                } finally {
+                  setReviewSubmitting(false);
+                }
+              }}
+            >
+              Gửi đánh giá
+            </Button>
+          </Box>
           {reviewsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />

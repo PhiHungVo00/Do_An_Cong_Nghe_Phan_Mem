@@ -200,6 +200,22 @@ export const reviewAPI = {
     const response = await fetch(`${API_BASE_URL}/reviews/product/${productId}`);
     return handleResponse(response);
   },
+
+  // Create shop review
+  createShop: async (reviewData: { rating: number; content: string }) => {
+    const response = await fetch(`${API_BASE_URL}/reviews/shop`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(reviewData),
+    });
+    return handleResponse(response);
+  },
+
+  // Get shop reviews
+  getShopReviews: async () => {
+    const response = await fetch(`${API_BASE_URL}/reviews/shop`);
+    return handleResponse(response);
+  },
 };
 
 // Sales Event API

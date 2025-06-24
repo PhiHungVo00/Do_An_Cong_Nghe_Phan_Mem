@@ -18,6 +18,7 @@ import {
   EmojiEvents as ChallengesIcon,
   Event as EventsIcon,
   History as HistoryIcon,
+  RateReview as RateReviewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -97,6 +98,15 @@ const NavBar: React.FC = () => {
             sx={{ textTransform: 'none' }}
           >
             Lịch sử đơn hàng
+          </Button>
+
+          <Button
+            color="inherit"
+            startIcon={<RateReviewIcon />}
+            onClick={() => navigate('/shop-review')}
+            sx={{ textTransform: 'none' }}
+          >
+            Đánh giá shop
           </Button>
 
           <IconButton 

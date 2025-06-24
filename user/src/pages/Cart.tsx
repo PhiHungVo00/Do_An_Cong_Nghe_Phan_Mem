@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -47,6 +47,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import { useCart } from '../contexts/CartContext';
 import { orderAPI } from '../services/api';
+import QRCode from 'react-qr-code';
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
@@ -56,6 +57,14 @@ const Cart: React.FC = () => {
   const [shippingAddress, setShippingAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Khi mở dialog thanh toán, lấy địa chỉ mặc định từ localStorage
+  useEffect(() => {
+    if (isCheckoutDialogOpen) {
+      const saved = localStorage.getItem('deliveryAddress');
+      if (saved) setShippingAddress(saved);
+    }
+  }, [isCheckoutDialogOpen]);
 
   const handleQuantityChange = (productId: number, newQuantity: number) => {
     if (newQuantity >= 1) {
@@ -99,10 +108,10 @@ const Cart: React.FC = () => {
       await orderAPI.create(orderData);
       
       clearCart();
-      setIsCheckoutDialogOpen(false);
-      enqueueSnackbar('Đặt hàng thành công!', {
-        variant: 'success',
-      });
+    setIsCheckoutDialogOpen(false);
+    enqueueSnackbar('Đặt hàng thành công!', {
+      variant: 'success',
+    });
       navigate('/order-history', { state: { reload: true } });
     } catch (error) {
       enqueueSnackbar('Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.', {
@@ -392,6 +401,28 @@ const Cart: React.FC = () => {
                 <MenuItem value="vnpay">VNPay</MenuItem>
             </Select>
           </FormControl>
+
+            {/* QR Code hiển thị khi chọn phương thức thanh toán online */}
+            {['bank', 'momo', 'vnpay'].includes(paymentMethod) && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  Quét mã QR để thanh toán {paymentMethod === 'bank' ? 'Ngân hàng' : paymentMethod === 'momo' ? 'MoMo' : 'VNPay'}
+                </Typography>
+                <QRCode
+                  value={
+                    paymentMethod === 'bank'
+                      ? 'STK: 123456789\nNgân hàng: ABC Bank\nTên: NGUYEN VAN A\nNội dung: THANHTOAN-[MÃ ĐƠN HÀNG]'
+                      : paymentMethod === 'momo'
+                      ? 'https://link.momo.vn/your-momo-payment-link'
+                      : 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...'
+                  }
+                  size={180}
+                />
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Vui lòng chuyển khoản đúng nội dung để hệ thống tự động xác nhận!
+                </Typography>
+              </Box>
+            )}
 
             <Alert severity="info" sx={{ mb: 2 }}>
               <Typography variant="body2">

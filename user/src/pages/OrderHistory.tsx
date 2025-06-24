@@ -191,8 +191,8 @@ const OrderHistory: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <Receipt sx={{ mr: 2, fontSize: 40, color: 'primary.main' }} />
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Lịch sử đơn hàng
-        </Typography>
+        Lịch sử đơn hàng
+      </Typography>
       </Box>
 
       {error && (
