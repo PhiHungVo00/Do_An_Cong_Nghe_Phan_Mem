@@ -11,6 +11,7 @@ import MainLayout from './layouts/MainLayout';
 import Challenges from './pages/Challenges';
 import LiveEvents from './pages/LiveEvents';
 import ShopReview from './pages/ShopReview';
+import Chat from './pages/Chat';
 
 // Kiểm tra xem các components có tồn tại không
 const AppRoutes: React.FC = () => {
@@ -25,7 +26,8 @@ const AppRoutes: React.FC = () => {
     MainLayout,
     Challenges,
     LiveEvents,
-    ShopReview
+    ShopReview,
+    Chat
   });
 
   return (
@@ -89,6 +91,14 @@ const AppRoutes: React.FC = () => {
           element={
             <MainLayout>
               <ShopReview />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <MainLayout>
+              <Chat />
             </MainLayout>
           }
         />

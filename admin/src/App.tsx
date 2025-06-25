@@ -27,6 +27,7 @@ import HelpCenter from './pages/HelpCenter';
 import RevenueDetails from './pages/RevenueDetails';
 import AccessDetails from './pages/AccessDetails';
 import TransactionDetails from './pages/TransactionDetails';
+import Chat from './pages/Chat';
 
 // Auth Guard
 import PrivateRoute from './components/PrivateRoute';
@@ -56,6 +57,7 @@ const App: React.FC = () => {
               <Route path="revenue-details" element={<RevenueDetails />} />
               <Route path="access-details" element={<AccessDetails />} />
               <Route path="transaction-details" element={<TransactionDetails />} />
+              <Route path="chat" element={<Chat />} />
             </Route>
           </Routes>
         </LocalizationProvider>

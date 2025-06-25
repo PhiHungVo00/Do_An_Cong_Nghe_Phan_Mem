@@ -7,218 +7,65 @@ const Review = require('../models/Review');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-// Sample products data with new fields
-const sampleProducts = [
-  {
-    name: 'Máy Lọc Không Khí Samsung',
-    description: 'Máy lọc không khí thông minh với công nghệ tiên tiến, loại bỏ 99.9% bụi mịn và vi khuẩn',
-    price: 4990000,
-    originalPrice: 5990000,
-    discount: 17,
-    stock: 50,
-    soldCount: 125,
-    category: 'Điện Gia Dụng',
-    brand: 'Samsung',
-    image: 'https://source.unsplash.com/400x400/?air-purifier',
-    images: [
-      'https://source.unsplash.com/400x400/?air-purifier',
-      'https://source.unsplash.com/400x400/?air-purifier-2',
-      'https://source.unsplash.com/400x400/?air-purifier-3'
-    ],
-    rating: 4.8,
-    reviewCount: 356,
-    specifications: 'Công suất: 60W, Diện tích sử dụng: 50m², Độ ồn: <25dB',
-    warranty: '24 tháng',
-    sku: 'SAMSUNG-AIR-001',
-    supplier: 'Samsung Electronics',
-    barcode: '8801641234567',
-    tags: ['máy lọc không khí', 'thông minh', 'samsung'],
-    featured: true,
-    isActive: true
-  },
-  {
-    name: 'Robot Hút Bụi Thông Minh',
-    description: 'Robot hút bụi tự động với điều khiển qua app, lập bản đồ thông minh',
-    price: 7990000,
-    originalPrice: 8990000,
-    discount: 11,
-    stock: 30,
-    soldCount: 89,
-    category: 'Điện Gia Dụng',
-    brand: 'Xiaomi',
-    image: 'https://source.unsplash.com/400x400/?robot-vacuum',
-    images: [
-      'https://source.unsplash.com/400x400/?robot-vacuum',
-      'https://source.unsplash.com/400x400/?robot-vacuum-2'
-    ],
-    rating: 4.7,
-    reviewCount: 245,
-    specifications: 'Pin: 5200mAh, Thời gian hoạt động: 150 phút, Lập bản đồ: LIDAR',
-    warranty: '12 tháng',
-    sku: 'XIAOMI-ROBOT-001',
-    supplier: 'Xiaomi Technology',
-    barcode: '6934177701234',
-    tags: ['robot hút bụi', 'thông minh', 'xiaomi'],
-    featured: true,
-    isActive: true
-  },
-  {
-    name: 'Nồi Chiên Không Dầu',
-    description: 'Nồi chiên không dầu đa năng với 8 chế độ nấu, tiết kiệm 80% dầu mỡ',
-    price: 2490000,
-    originalPrice: 2990000,
-    discount: 17,
-    stock: 100,
-    soldCount: 234,
-    category: 'Nhà Bếp',
-    brand: 'Philips',
-    image: 'https://source.unsplash.com/400x400/?air-fryer',
-    images: [
-      'https://source.unsplash.com/400x400/?air-fryer',
-      'https://source.unsplash.com/400x400/?air-fryer-2'
-    ],
-    rating: 4.9,
-    reviewCount: 567,
-    specifications: 'Dung tích: 4.1L, Công suất: 1500W, Nhiệt độ: 80-200°C',
-    warranty: '24 tháng',
-    sku: 'PHILIPS-FRYER-001',
-    supplier: 'Philips Vietnam',
-    barcode: '8710103745678',
-    tags: ['nồi chiên', 'không dầu', 'philips'],
-    featured: true,
-    isActive: true
-  },
-  {
-    name: 'Máy Pha Cà Phê Tự Động',
-    description: 'Máy pha cà phê tự động với 15 chế độ pha, tích hợp máy xay',
-    price: 5990000,
-    originalPrice: 6990000,
-    discount: 14,
-    stock: 25,
-    soldCount: 67,
-    category: 'Nhà Bếp',
-    brand: 'DeLonghi',
-    image: 'https://source.unsplash.com/400x400/?coffee-machine',
-    images: [
-      'https://source.unsplash.com/400x400/?coffee-machine',
-      'https://source.unsplash.com/400x400/?coffee-machine-2'
-    ],
-    rating: 4.6,
-    reviewCount: 189,
-    specifications: 'Áp suất: 15 bar, Bình chứa nước: 1.8L, Công suất: 1450W',
-    warranty: '24 tháng',
-    sku: 'DELONGHI-COFFEE-001',
-    supplier: 'DeLonghi Vietnam',
-    barcode: '8004390123456',
-    tags: ['máy pha cà phê', 'tự động', 'delonghi'],
-    featured: false,
-    isActive: true
-  },
-  {
-    name: 'Smart TV QLED 65"',
-    description: 'Smart TV QLED 4K với công nghệ AI, âm thanh Dolby Atmos',
-    price: 35900000,
-    originalPrice: 39900000,
-    discount: 10,
-    stock: 15,
-    soldCount: 23,
-    category: 'Điện Tử',
-    brand: 'Samsung',
-    image: 'https://source.unsplash.com/400x400/?smart-tv',
-    images: [
-      'https://source.unsplash.com/400x400/?smart-tv',
-      'https://source.unsplash.com/400x400/?smart-tv-2'
-    ],
-    rating: 4.7,
-    reviewCount: 123,
-    specifications: 'Độ phân giải: 4K UHD, HDR: Quantum HDR, Âm thanh: Dolby Atmos',
-    warranty: '24 tháng',
-    sku: 'SAMSUNG-TV-001',
-    supplier: 'Samsung Electronics',
-    barcode: '8801647890123',
-    tags: ['smart tv', 'qled', '4k', 'samsung'],
-    featured: true,
-    isActive: true
-  },
-  {
-    name: 'Tủ Lạnh Side by Side',
-    description: 'Tủ lạnh side by side với công nghệ Inverter, ngăn đá mềm',
-    price: 28900000,
-    originalPrice: 32900000,
-    discount: 12,
-    stock: 20,
-    soldCount: 45,
-    category: 'Điện Gia Dụng',
-    brand: 'LG',
-    image: 'https://source.unsplash.com/400x400/?refrigerator',
-    images: [
-      'https://source.unsplash.com/400x400/?refrigerator',
-      'https://source.unsplash.com/400x400/?refrigerator-2'
-    ],
-    rating: 4.8,
-    reviewCount: 234,
-    specifications: 'Dung tích: 668L, Công nghệ: Inverter, Ngăn đá mềm: Có',
-    warranty: '24 tháng',
-    sku: 'LG-FRIDGE-001',
-    supplier: 'LG Electronics',
-    barcode: '8806084567890',
-    tags: ['tủ lạnh', 'side by side', 'lg'],
-    featured: false,
-    isActive: true
-  },
-  {
-    name: 'Máy Giặt Cửa Trước',
-    description: 'Máy giặt cửa trước với công nghệ Steam, tiết kiệm nước',
-    price: 12900000,
-    originalPrice: 14900000,
-    discount: 13,
-    stock: 40,
-    soldCount: 78,
-    category: 'Điện Gia Dụng',
-    brand: 'Samsung',
-    image: 'https://source.unsplash.com/400x400/?washing-machine',
-    images: [
-      'https://source.unsplash.com/400x400/?washing-machine',
-      'https://source.unsplash.com/400x400/?washing-machine-2'
-    ],
-    rating: 4.6,
-    reviewCount: 178,
-    specifications: 'Khối lượng giặt: 9kg, Công nghệ: Steam, Tiết kiệm nước: A+++',
-    warranty: '24 tháng',
-    sku: 'SAMSUNG-WASHER-001',
-    supplier: 'Samsung Electronics',
-    barcode: '8801642345678',
-    tags: ['máy giặt', 'cửa trước', 'samsung'],
-    featured: false,
-    isActive: true
-  },
-  {
-    name: 'Lò Vi Sóng Digital',
-    description: 'Lò vi sóng digital với 25 chế độ nấu, nướng đối lưu',
-    price: 3990000,
-    originalPrice: 4590000,
-    discount: 13,
-    stock: 60,
-    soldCount: 156,
-    category: 'Nhà Bếp',
-    brand: 'Panasonic',
-    image: 'https://source.unsplash.com/400x400/?microwave',
-    images: [
-      'https://source.unsplash.com/400x400/?microwave',
-      'https://source.unsplash.com/400x400/?microwave-2'
-    ],
-    rating: 4.5,
-    reviewCount: 156,
-    specifications: 'Công suất: 1000W, Dung tích: 27L, Nướng đối lưu: Có',
-    warranty: '12 tháng',
-    sku: 'PANASONIC-MICRO-001',
-    supplier: 'Panasonic Vietnam',
-    barcode: '8858990123456',
-    tags: ['lò vi sóng', 'digital', 'panasonic'],
-    featured: false,
-    isActive: true
-  }
+// Tạo 50 sản phẩm duy nhất dựa trên 8 mẫu có sẵn
+const categories = ['Điện Gia Dụng', 'Nhà Bếp', 'Điện Tử', 'Gia Dụng Thông Minh', 'Thiết Bị Nhà Bếp', 'Thiết Bị Điện', 'Thiết Bị Thông Minh', 'Đồ Gia Dụng'];
+const brands = ['Samsung', 'Xiaomi', 'Philips', 'DeLonghi', 'LG', 'Panasonic', 'Sony', 'Sharp', 'Electrolux', 'Toshiba'];
+const productNames = [
+  'Máy Lọc Không Khí', 'Robot Hút Bụi', 'Nồi Chiên Không Dầu', 'Máy Pha Cà Phê', 'Smart TV', 'Tủ Lạnh', 'Máy Giặt', 'Lò Vi Sóng',
+  'Máy Sấy Quần Áo', 'Bếp Điện Từ', 'Máy Rửa Chén', 'Máy Lọc Nước', 'Bình Đun Siêu Tốc', 'Quạt Điều Hòa', 'Máy Hút Mùi',
+  'Máy Sưởi', 'Máy Xay Sinh Tố', 'Nồi Cơm Điện', 'Bàn Ủi Hơi Nước', 'Máy Làm Sữa Hạt', 'Máy Làm Bánh Mì', 'Máy Làm Sữa Chua',
+  'Máy Làm Kem', 'Máy Đánh Trứng', 'Máy Vắt Cam', 'Máy Xay Thịt', 'Máy Lọc Nước Nóng Lạnh', 'Máy Lọc Không Khí Mini',
+  'Máy Lọc Không Khí Ô Tô', 'Máy Lọc Không Khí Cầm Tay', 'Máy Lọc Không Khí Di Động', 'Máy Lọc Không Khí Để Bàn',
+  'Máy Lọc Không Khí Cao Cấp', 'Máy Lọc Không Khí Giá Rẻ', 'Máy Lọc Không Khí Thông Minh', 'Máy Lọc Không Khí Tự Động',
+  'Máy Lọc Không Khí Công Nghiệp', 'Máy Lọc Không Khí Gia Đình', 'Máy Lọc Không Khí Văn Phòng', 'Máy Lọc Không Khí Mini USB',
+  'Máy Lọc Không Khí Pin Sạc', 'Máy Lọc Không Khí Đa Năng', 'Máy Lọc Không Khí 2 Trong 1', 'Máy Lọc Không Khí 3 Trong 1',
+  'Máy Lọc Không Khí 4 Trong 1', 'Máy Lọc Không Khí 5 Trong 1', 'Máy Lọc Không Khí 6 Trong 1', 'Máy Lọc Không Khí 7 Trong 1',
+  'Máy Lọc Không Khí 8 Trong 1', 'Máy Lọc Không Khí 9 Trong 1'
 ];
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const sampleProducts = Array.from({ length: 50 }, (_, i) => {
+  const name = productNames[i % productNames.length] + ' ' + (i + 1);
+  const brand = brands[i % brands.length];
+  const category = categories[i % categories.length];
+  const price = randomInt(1000000, 40000000);
+  const originalPrice = price + randomInt(500000, 5000000);
+  const discount = Math.round(((originalPrice - price) / originalPrice) * 100);
+  const stock = randomInt(10, 100);
+  const soldCount = randomInt(10, 500);
+  const rating = (Math.random() * 1.5 + 3.5).toFixed(1);
+  const reviewCount = randomInt(10, 1000);
+  const sku = `${brand.toUpperCase()}-${category.replace(/\s/g, '').toUpperCase()}-${(i + 1).toString().padStart(3, '0')}`;
+  const barcode = '880' + (1000000000 + i).toString();
+  const image = `https://source.unsplash.com/400x400/?product,${encodeURIComponent(name)}`;
+  const images = [image, image + '-2', image + '-3'];
+  return {
+    name,
+    description: `${name} chất lượng cao, chính hãng ${brand}, bảo hành 12-24 tháng.`,
+    price,
+    originalPrice,
+    discount,
+    stock,
+    soldCount,
+    category,
+    brand,
+    image,
+    images,
+    rating: Number(rating),
+    reviewCount,
+    specifications: 'Thông số kỹ thuật đa dạng, vui lòng xem chi tiết.',
+    warranty: randomInt(12, 36) + ' tháng',
+    sku,
+    supplier: `${brand} Vietnam`,
+    barcode,
+    tags: [name.toLowerCase(), brand.toLowerCase(), category.toLowerCase()],
+    featured: i % 7 === 0,
+    isActive: true
+  };
+});
 
 // Sample users data
 const sampleUsers = [
@@ -243,45 +90,58 @@ const sampleUsers = [
 ];
 
 // Sample sales events data
-const sampleSalesEvents = [
-  {
-    title: 'Siêu Sale Thiết Bị Nhà Bếp',
-    description: 'Chương trình khuyến mãi lớn nhất năm cho các thiết bị nhà bếp cao cấp',
-    shortDescription: 'Giảm đến 30% thiết bị nhà bếp',
-    image: 'https://source.unsplash.com/800x400/?kitchen-appliance',
-    bannerImage: 'https://source.unsplash.com/1200x300/?kitchen-sale',
-    startDate: new Date('2024-01-01'),
-    endDate: new Date('2024-12-31'),
-    type: 'promotion',
-    status: 'active',
-    location: 'Toàn quốc',
-    participants: ['user1', 'user2', 'user3'],
-    maxParticipants: 1000,
-    budget: 50000000,
-    notes: 'Chương trình khuyến mãi đặc biệt',
-    discountPercentage: 30,
-    isPublic: true,
-    priority: 1
-  },
-  {
-    title: 'Sự Kiện Ra Mắt Sản Phẩm Mới',
-    description: 'Sự kiện ra mắt các sản phẩm công nghệ mới nhất',
-    shortDescription: 'Khám phá công nghệ mới',
-    image: 'https://source.unsplash.com/800x400/?tech-event',
-    bannerImage: 'https://source.unsplash.com/1200x300/?tech-launch',
-    startDate: new Date('2024-02-01'),
-    endDate: new Date('2024-02-15'),
-    type: 'event',
-    status: 'active',
-    location: 'Hà Nội',
-    participants: ['admin', 'employee1'],
-    maxParticipants: 200,
-    budget: 20000000,
-    notes: 'Sự kiện quan trọng',
-    isPublic: true,
-    priority: 2
-  }
+const saleEventTitles = [
+  'Siêu Sale Thiết Bị Nhà Bếp',
+  'Sự Kiện Ra Mắt Sản Phẩm Mới',
+  'Black Friday Đại Tiệc Giảm Giá',
+  'Mừng Năm Mới Sale Khủng',
+  'Flash Sale Điện Gia Dụng',
+  'Summer Sale Sôi Động',
+  'Back To School Ưu Đãi',
+  'Tết Sale Rộn Ràng'
 ];
+const saleEventImages = [
+  'https://source.unsplash.com/800x400/?kitchen-appliance',
+  'https://source.unsplash.com/800x400/?tech-event',
+  'https://source.unsplash.com/800x400/?black-friday',
+  'https://source.unsplash.com/800x400/?new-year-sale',
+  'https://source.unsplash.com/800x400/?flash-sale',
+  'https://source.unsplash.com/800x400/?summer-sale',
+  'https://source.unsplash.com/800x400/?back-to-school',
+  'https://source.unsplash.com/800x400/?tet-sale'
+];
+const saleEventBannerImages = [
+  'https://source.unsplash.com/1200x300/?kitchen-sale',
+  'https://source.unsplash.com/1200x300/?tech-launch',
+  'https://source.unsplash.com/1200x300/?black-friday-banner',
+  'https://source.unsplash.com/1200x300/?new-year-banner',
+  'https://source.unsplash.com/1200x300/?flash-sale-banner',
+  'https://source.unsplash.com/1200x300/?summer-banner',
+  'https://source.unsplash.com/1200x300/?back-to-school-banner',
+  'https://source.unsplash.com/1200x300/?tet-banner'
+];
+const saleEventTypes = ['promotion', 'event', 'promotion', 'promotion', 'promotion', 'promotion', 'event', 'promotion'];
+const saleEventLocations = ['Toàn quốc', 'Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Toàn quốc', 'Hà Nội', 'TP.HCM', 'Toàn quốc'];
+
+const sampleSalesEvents = Array.from({ length: 8 }, (_, i) => ({
+  title: saleEventTitles[i],
+  description: `Chương trình ${saleEventTitles[i]} với nhiều ưu đãi hấp dẫn, giảm giá lên đến ${20 + i * 5}% cho hàng loạt sản phẩm hot!`,
+  shortDescription: `Giảm đến ${20 + i * 5}%`,
+  image: saleEventImages[i],
+  bannerImage: saleEventBannerImages[i],
+  startDate: new Date(2024, 0, 1 + i * 15),
+  endDate: new Date(2024, 0, 10 + i * 15),
+  type: saleEventTypes[i],
+  status: 'active',
+  location: saleEventLocations[i],
+  participants: [],
+  maxParticipants: 1000 + i * 100,
+  budget: 20000000 + i * 5000000,
+  notes: `Sự kiện ${saleEventTitles[i]} đặc biệt`,
+  discountPercentage: 20 + i * 5,
+  isPublic: true,
+  priority: i + 1
+}));
 
 const seedData = async () => {
   try {

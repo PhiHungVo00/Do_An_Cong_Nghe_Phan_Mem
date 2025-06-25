@@ -237,4 +237,24 @@ export const salesEventAPI = {
 export const healthCheck = async () => {
   const response = await fetch(`${API_BASE_URL}/health`);
   return handleResponse(response);
+};
+
+// Message API
+export const messageAPI = {
+  // Lấy lịch sử chat với 1 user (admin)
+  getMessages: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/messages/${userId}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+  // Gửi tin nhắn
+  sendMessage: async (to: string, content: string) => {
+    const response = await fetch(`${API_BASE_URL}/messages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ to, content }),
+    });
+    return handleResponse(response);
+  },
 }; 

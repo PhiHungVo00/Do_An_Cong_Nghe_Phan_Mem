@@ -30,6 +30,7 @@ import {
   Settings as SettingsIcon,
   HelpCenter as HelpCenterIcon,
   Search as SearchIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
 import { logout } from '../store/slices/authSlice';
 
@@ -42,6 +43,7 @@ const mainMenu = [
   { text: 'Customers', icon: <CustomersIcon />, path: '/customers' },
   { text: 'Sales Calendar', icon: <CalendarIcon />, path: '/calendar' },
   { text: 'Reviews', icon: <ReviewsIcon />, path: '/reviews' },
+  { text: 'Chat', icon: <ChatIcon />, path: '/chat' },
 ];
 const bottomMenu = [
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },

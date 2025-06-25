@@ -14,6 +14,7 @@ import Products from './pages/Products';
 import OrderHistory from './pages/OrderHistory';
 import Login from './pages/auth/Login';
 import ShopReview from './pages/ShopReview';
+import Chat from './pages/Chat';
 import { CartProvider } from './contexts/CartContext';
 
 // Cấu hình future flags cho React Router
@@ -52,6 +53,7 @@ const App: React.FC = () => {
                   <Route path="/products/:categoryId" element={<Products />} />
                   <Route path="/order-history" element={<OrderHistory />} />
                   <Route path="/shop-review" element={<ShopReview />} />
+                  <Route path="/chat" element={<Chat />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

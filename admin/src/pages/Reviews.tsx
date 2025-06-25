@@ -84,33 +84,41 @@ const Reviews: React.FC = () => {
     <Box>
       <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: 'primary.main' }}>Đánh giá shop</Typography>
       {shopLoading ? (
-        <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </Box>
       ) : shopError ? (
         <Alert severity="error">{shopError}</Alert>
       ) : shopReviews.length > 0 ? (
         <Grid container spacing={3}>
           {shopReviews.map((review) => (
             <Grid item xs={12} md={6} lg={4} key={review._id}>
-              <Card sx={{ borderRadius: 3, boxShadow: 3, mb: 2 }}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, p: 2, height: '100%' }}>
                 <CardHeader
                   avatar={<Avatar src={review.customerAvatar}>{review.customerName?.[0]}</Avatar>}
-                  title={<Typography fontWeight={600}>{review.customerName}</Typography>}
-                  subheader={<>
-                    <Rating value={review.rating} readOnly size="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(review.createdAt).toLocaleDateString('vi-VN')}
-                    </Typography>
-                  </>}
+                  title={<Typography fontWeight={700}>{review.customerName}</Typography>}
+                  subheader={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Rating value={review.rating} readOnly size="small" />
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                      </Typography>
+                    </Box>
+                  }
                 />
                 <CardContent>
-                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>{review.content}</Typography>
+                  <Typography variant="body1" sx={{ mb: 1, color: 'text.primary' }}>
+                    {review.content}
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
       ) : (
-        <Typography color="text.secondary">Chưa có đánh giá nào cho shop</Typography>
+        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+          Chưa có đánh giá nào cho shop
+        </Typography>
       )}
     </Box>
   );

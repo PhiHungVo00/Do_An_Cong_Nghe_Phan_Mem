@@ -38,6 +38,7 @@ const orderRoutes = require('./routes/orders');
 const salesEventRoutes = require('./routes/salesEvents');
 const employeeRoutes = require('./routes/employees');
 const reviewRoutes = require('./routes/reviews');
+const messageRoutes = require('./routes/messages');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -47,6 +48,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/sales-events', salesEventRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

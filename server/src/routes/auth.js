@@ -129,4 +129,16 @@ router.patch('/profile', auth, async (req, res) => {
   }
 });
 
+// Lấy thông tin user hiện tại
+router.get('/me', auth, async (req, res) => {
+  res.json(req.user);
+});
+
+// Lấy user admin đầu tiên
+router.get('/admin', async (req, res) => {
+  const admin = await User.findOne({ role: 'admin' });
+  if (!admin) return res.status(404).json({ message: 'Không tìm thấy admin' });
+  res.json({ _id: admin._id, fullName: admin.fullName, email: admin.email });
+});
+
 module.exports = router; 

@@ -109,6 +109,15 @@ const NavBar: React.FC = () => {
             Đánh giá shop
           </Button>
 
+          <Button
+            color="inherit"
+            startIcon={<PersonIcon />}
+            onClick={() => navigate('/chat')}
+            sx={{ textTransform: 'none' }}
+          >
+            Chat
+          </Button>
+
           <IconButton 
             color="inherit"
             onClick={() => navigate('/cart')}
