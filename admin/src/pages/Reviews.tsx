@@ -33,12 +33,12 @@ const Reviews: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setShopLoading(true);
+      setShopLoading(true);
     fetch('http://localhost:5000/api/reviews/shop')
-      .then(res => res.json())
-      .then(data => setShopReviews(data.reviews || []))
-      .catch(() => setShopError('Không thể tải đánh giá shop'))
-      .finally(() => setShopLoading(false));
+        .then(res => res.json())
+        .then(data => setShopReviews(data.reviews || []))
+        .catch(() => setShopError('Không thể tải đánh giá shop'))
+        .finally(() => setShopLoading(false));
   }, []);
 
   const fetchReviews = async () => {
@@ -87,11 +87,11 @@ const Reviews: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress />
         </Box>
-      ) : shopError ? (
-        <Alert severity="error">{shopError}</Alert>
-      ) : shopReviews.length > 0 ? (
+          ) : shopError ? (
+            <Alert severity="error">{shopError}</Alert>
+          ) : shopReviews.length > 0 ? (
         <Grid container spacing={3}>
-          {shopReviews.map((review) => (
+              {shopReviews.map((review) => (
             <Grid item xs={12} md={6} lg={4} key={review._id}>
               <Card sx={{ borderRadius: 3, boxShadow: 3, p: 2, height: '100%' }}>
                 <CardHeader
@@ -113,9 +113,9 @@ const Reviews: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-          ))}
+              ))}
         </Grid>
-      ) : (
+          ) : (
         <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
           Chưa có đánh giá nào cho shop
         </Typography>

@@ -61,32 +61,32 @@ const categoryDetails = {
   kitchen: {
     title: 'Thiết Bị Nhà Bếp',
     description: 'Các thiết bị nhà bếp hiện đại, thông minh giúp việc nấu nướng trở nên dễ dàng và tiện lợi hơn.',
-    banner: 'https://source.unsplash.com/1600x400/?modern-kitchen',
+    banner: '/assets/smarthome.jpg',
   },
   livingroom: {
     title: 'Thiết Bị Phòng Khách',
     description: 'Các thiết bị điện tử và nội thất thông minh cho phòng khách hiện đại.',
-    banner: 'https://source.unsplash.com/1600x400/?modern-living-room',
+    banner: '/assets/smarthome.jpg',
   },
   bedroom: {
     title: 'Thiết Bị Phòng Ngủ',
     description: 'Các thiết bị thông minh giúp không gian nghỉ ngơi của bạn thoải mái hơn.',
-    banner: 'https://source.unsplash.com/1600x400/?modern-bedroom',
+    banner: '/assets/smarthome.jpg',
   },
   bathroom: {
     title: 'Thiết Bị Phòng Tắm',
     description: 'Các thiết bị phòng tắm hiện đại mang lại trải nghiệm spa tại nhà.',
-    banner: 'https://source.unsplash.com/1600x400/?modern-bathroom',
+    banner: '/assets/smarthome.jpg',
   },
   appliance: {
     title: 'Điện Gia Dụng',
     description: 'Các thiết bị điện gia dụng thông minh giúp cuộc sống tiện nghi hơn.',
-    banner: 'https://source.unsplash.com/1600x400/?home-appliances',
+    banner: '/assets/smarthome.jpg',
   },
   smart: {
     title: 'Thiết Bị Thông Minh',
     description: 'Các thiết bị thông minh kết nối IoT, điều khiển qua điện thoại.',
-    banner: 'https://source.unsplash.com/1600x400/?smart-home',
+    banner: '/assets/smarthome.jpg',
   },
 };
 
@@ -227,7 +227,7 @@ const Products: React.FC = () => {
       return {
         title: 'Tất cả sản phẩm',
         description: 'Khám phá tất cả các sản phẩm của chúng tôi',
-        banner: 'https://source.unsplash.com/1600x400/?electronics-store',
+        banner: '/assets/smarthome.jpg',
       };
     }
     return categoryDetails[categoryId as keyof typeof categoryDetails] || {
@@ -248,7 +248,11 @@ const Products: React.FC = () => {
     <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
       <Box sx={{ position: 'relative', p: 2 }}>
         <img 
-          src={product.images?.[0] || '/placeholder-product.jpg'} 
+          src={
+            product.images?.[0]?.startsWith('/assets/')
+              ? `http://localhost:5000${product.images[0]}`
+              : (product.images?.[0] || '/placeholder-product.jpg')
+          }
           alt={product.name}
           style={{ 
             width: '100%', 

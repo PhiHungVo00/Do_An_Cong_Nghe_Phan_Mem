@@ -99,12 +99,14 @@ const Products: React.FC = () => {
     totalPages: 1,
     totalProducts: 0
   });
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchProducts(paginationModel.page);
+    // eslint-disable-next-line
+  }, [paginationModel.page]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = 0) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -113,7 +115,7 @@ const Products: React.FC = () => {
         return;
       }
 
-      const response = await axios.get<ProductResponse>('http://localhost:5000/api/products', {
+      const response = await axios.get<ProductResponse>(`http://localhost:5000/api/products?page=${page + 1}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -171,8 +173,12 @@ const Products: React.FC = () => {
       headerName: 'Hình ảnh', 
       width: 100,
       renderCell: (params) => (
-        <img 
-          src={params.value} 
+        <img
+          src={
+            params.value?.startsWith('/assets/')
+              ? `http://localhost:5000${params.value}`
+              : params.value
+          }
           alt={params.row.name}
           style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
         />
@@ -560,7 +566,7 @@ const Products: React.FC = () => {
           columns={columns}
           initialState={{
             pagination: {
-              paginationModel: { pageSize: 10 }
+              paginationModel: { pageSize: 10, page: 0 }
             }
           }}
           pageSizeOptions={[10, 25, 50]}
@@ -572,6 +578,11 @@ const Products: React.FC = () => {
               outline: 'none'
             }
           }}
+          pagination
+          paginationMode="server"
+          rowCount={pagination.totalProducts}
+          paginationModel={paginationModel}
+          onPaginationModelChange={(model) => setPaginationModel(model)}
         />
       )}
 

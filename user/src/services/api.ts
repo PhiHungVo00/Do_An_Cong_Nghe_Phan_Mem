@@ -257,4 +257,13 @@ export const messageAPI = {
     });
     return handleResponse(response);
   },
+};
+
+// Challenge API
+export const challengeAPI = {
+  // Get all challenges
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/challenges/public`);
+    return handleResponse(response);
+  },
 }; 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -11,12 +11,14 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close,
 } from '@mui/icons-material';
 import { Challenge, Badge, Voucher, Event, LeaderboardEntry } from '../types';
-import ChallengeCard from '../components/challenges/ChallengeCard';
+import HomeChallengeCard from '../components/home/ChallengeCard';
+import { challengeAPI } from '../services/api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -316,6 +318,9 @@ const Challenges: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -398,6 +403,23 @@ const Challenges: React.FC = () => {
     // TODO: Implement challenge join logic
   };
 
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await challengeAPI.getAll();
+        const challengeData = Array.isArray(res) ? res : (res?.challenges || []);
+        setChallenges(challengeData);
+      } catch (err) {
+        setError('Không thể tải thử thách. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChallenges();
+  }, []);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -426,18 +448,40 @@ const Challenges: React.FC = () => {
         </Typography>
       </Box>
 
-      <Grid container spacing={3}>
-        {challenges.map((challenge) => (
-          <Grid item xs={12} sm={6} md={4} key={challenge.id}>
-            <ChallengeCard
-              challenge={challenge}
-              onJoin={handleJoinChallenge}
-              progress={0}
-              isParticipating={false}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Alert severity="error">{error}</Alert>
+      ) : (
+        <Grid container spacing={3}>
+          {challenges.map((challenge) => {
+            const image =
+              'image' in challenge
+                ? (challenge as any).image
+                : challenge.badge?.image || 'https://source.unsplash.com/800x600/?challenge';
+            const reward =
+              'reward' in challenge
+                ? (challenge as any).reward
+                : challenge.rewards?.[0]?.description || '';
+            return (
+              <Grid item xs={12} sm={6} md={4} key={challenge.id}>
+                <HomeChallengeCard
+                  title={challenge.title}
+                  description={challenge.description}
+                  image={image}
+                  reward={reward}
+                  participants={challenge.participants || 0}
+                  progress={0}
+                  daysLeft={Math.max(0, Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
+                  onJoin={() => {}}
+                />
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
 
       {/* Challenge Detail Dialog */}
       <Dialog

@@ -104,8 +104,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
         image={image}
         alt={name}
         sx={{
-          pt: '75%',
-          cursor: 'pointer',
+          width: '100%',
+          height: 200,
+          objectFit: 'contain',
+          background: '#fff',
+          borderRadius: 2,
+          p: 1,
+          display: 'block',
+          mx: 'auto',
+          boxShadow: 1,
+          border: '1px solid #f0f0f0',
         }}
         onClick={() => navigate(`/product/${id}`)}
       />

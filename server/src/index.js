@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const morgan = require('morgan');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -39,6 +40,7 @@ const salesEventRoutes = require('./routes/salesEvents');
 const employeeRoutes = require('./routes/employees');
 const reviewRoutes = require('./routes/reviews');
 const messageRoutes = require('./routes/messages');
+const challengesRouter = require('./routes/challenges');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +51,7 @@ app.use('/api/sales-events', salesEventRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/challenges', challengesRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -64,6 +67,10 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
+
+app.use('/assets/products', express.static(path.join(__dirname, 'assets/products')));
+app.use('/assets/challenges', express.static(path.join(__dirname, 'assets/challenges')));
+app.use('/assets/events', express.static(path.join(__dirname, 'assets/events')));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

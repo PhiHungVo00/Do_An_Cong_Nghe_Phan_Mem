@@ -50,7 +50,7 @@ import { styled } from '@mui/material/styles';
 import ChallengeCard from '../components/home/ChallengeCard';
 import EventCard from '../components/home/EventCard';
 import { Images } from '../assets/index';
-import { productAPI, salesEventAPI } from '../services/api';
+import { productAPI, salesEventAPI, challengeAPI } from '../services/api';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -100,7 +100,10 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState<string>(localStorage.getItem('deliveryAddress') || 'Chưa có địa chỉ');
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const stored = localStorage.getItem('favorites');
+    return stored ? JSON.parse(stored) : [];
+  });
   const [addressDetails, setAddressDetails] = useState({
     streetNumber: '',
     streetName: '',
@@ -121,12 +124,20 @@ const Home: React.FC = () => {
   const [openAddressDialog, setOpenAddressDialog] = useState(false);
   const [tempAddress, setTempAddress] = useState(deliveryAddress);
 
+  // Thêm state cho thử thách
+  const [challenges, setChallenges] = useState<any[]>([]);
+
   const handleToggleFavorite = (productId: string) => {
-    setFavorites(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+    setFavorites(prev => {
+      let updated;
+      if (prev.includes(productId)) {
+        updated = prev.filter(id => id !== productId);
+      } else {
+        updated = [...prev, productId];
+      }
+      localStorage.setItem('favorites', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleAddToCart = (productId: string) => {
@@ -159,94 +170,22 @@ const Home: React.FC = () => {
   };
 
   const renderProductCard = (product: any) => (
-    <StyledProductCard key={product._id} onClick={() => navigate(`/product/${product._id}`)}>
-      <Box sx={{ position: 'relative', p: 2 }}>
-        <img 
-          src={product.images?.[0] || '/placeholder-product.jpg'} 
-          alt={product.name}
-          loading="lazy"
-          style={{ 
-            width: '100%', 
-            height: 200, 
-            objectFit: 'cover',
-            borderRadius: theme.shape.borderRadius 
-          }}
-        />
-        {product.discount > 0 && (
-          <Chip
-            label={`-${product.discount}%`}
-            color="error"
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              fontWeight: 'bold'
-            }}
-          />
-        )}
-        <IconButton
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            '&:hover': { backgroundColor: 'white' }
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToggleFavorite(product._id);
-          }}
-        >
-          <Favorite 
-            color={favorites.includes(product._id) ? 'error' : 'action'} 
-          />
-        </IconButton>
-      </Box>
-      
-      <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h6" component="h3" gutterBottom sx={{ 
-          fontWeight: 600,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {product.name}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Star sx={{ color: 'warning.main', fontSize: 16, mr: 0.5 }} />
-          <Typography variant="body2" color="text.secondary">
-            {product.rating || 0} ({product.reviewCount || 0} đánh giá)
-          </Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Typography variant="h6" color="primary" fontWeight="bold">
-            {formatPrice(product.price)}
-          </Typography>
-          {product.originalPrice && product.originalPrice > product.price && (
-            <Typography variant="body2" color="text.secondary" sx={{ textDecoration: 'line-through' }}>
-              {formatPrice(product.originalPrice)}
-            </Typography>
-          )}
-        </Box>
-        
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddToCart(product._id);
-          }}
-          sx={{ mt: 'auto' }}
-        >
-          Thêm vào giỏ
-        </Button>
-      </Box>
-    </StyledProductCard>
+    <ProductCard
+      id={product._id}
+      name={product.name}
+      image={
+        product.images?.[0]?.startsWith('/assets/')
+          ? `http://localhost:5000${product.images[0]}`
+          : (product.images?.[0] || product.image || '/placeholder-product.jpg')
+      }
+      price={product.price}
+      rating={product.rating}
+      reviews={product.reviewCount || product.reviews || 0}
+      discount={product.discount}
+      isFavorite={favorites.includes(product._id)}
+      onToggleFavorite={() => handleToggleFavorite(product._id)}
+      onAddToCart={() => handleAddToCart(product._id)}
+    />
   );
 
   const handleOpenAddressDialog = () => {
@@ -306,6 +245,11 @@ const Home: React.FC = () => {
         
         setBestSellers(bestSellersProducts);
         setOnSaleProducts(onSaleProductsData);
+        
+        // Lấy thử thách
+        const challengeRes = await challengeAPI.getAll();
+        const challengeData = Array.isArray(challengeRes) ? challengeRes : (challengeRes?.challenges || []);
+        setChallenges(challengeData);
         
       } catch (err) {
         setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
@@ -393,30 +337,6 @@ const Home: React.FC = () => {
     },
   ];
 
-  // Mock data cho thử thách
-  const challenges = [
-    {
-      id: 'challenge-1',
-      title: 'Thử Thách Tiết Kiệm',
-      description: 'Tiết kiệm 20% hóa đơn điện nước trong tháng này',
-      reward: '500.000 VNĐ',
-      participants: 1234,
-      endDate: new Date('2024-02-29'),
-      image: Images.thachthach,
-      status: 'Đang diễn ra',
-    },
-    {
-      id: 'challenge-2',
-      title: 'Thử Thách Xanh',
-      description: 'Sử dụng sản phẩm tiết kiệm năng lượng',
-      reward: '300.000 VNĐ',
-      participants: 856,
-      endDate: new Date('2024-03-15'),
-      image: Images.thachthach,
-      status: 'Sắp diễn ra',
-    },
-  ];
-
   const features = [
     {
       icon: <ShippingIcon fontSize="large" />,
@@ -461,6 +381,10 @@ const Home: React.FC = () => {
       </Container>
     );
   }
+
+  // Render sản phẩm yêu thích
+  const allProducts = [...featuredProducts, ...bestSellers, ...onSaleProducts];
+  const uniqueProducts = Array.from(new Map(allProducts.map(p => [p._id, p])).values());
 
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
@@ -581,7 +505,7 @@ const Home: React.FC = () => {
       </Container>
 
       {/* Banner Carousel */}
-      <Box sx={{ position: 'relative', mb: 6 }}>
+      <Box sx={{ position: 'relative', mb: 4 }}>
         <StyledCarousel
           autoPlay
           animation="slide"
@@ -589,8 +513,9 @@ const Home: React.FC = () => {
           interval={5000}
           indicators={true}
           navButtonsAlwaysVisible={true}
-          NextIcon={<NavigateNext sx={{ fontSize: 32 }} />}
-          PrevIcon={<NavigateBefore sx={{ fontSize: 32 }} />}
+          NextIcon={<NavigateNext sx={{ fontSize: 28 }} />}
+          PrevIcon={<NavigateBefore sx={{ fontSize: 28 }} />}
+          sx={{ maxWidth: 1100, mx: 'auto', borderRadius: 3, boxShadow: 2 }}
         >
           {bannerItems.map((item, i) => (
             <Paper
@@ -599,8 +524,10 @@ const Home: React.FC = () => {
                 position: 'relative',
                 cursor: 'pointer',
                 overflow: 'hidden',
-                borderRadius: { xs: 0, md: 2 },
-                boxShadow: 3,
+                borderRadius: 3,
+                boxShadow: 2,
+                minHeight: { xs: 200, sm: 280, md: 340 },
+                maxHeight: { xs: 240, sm: 320, md: 400 },
               }}
               onClick={() => navigate(item.link)}
             >
@@ -615,7 +542,7 @@ const Home: React.FC = () => {
                     right: 0,
                     bottom: 0,
                     background: item.bgColor,
-                    opacity: 0.2,
+                    opacity: 0.15,
                     zIndex: 1,
                   },
                 }}
@@ -626,11 +553,12 @@ const Home: React.FC = () => {
                   alt={item.title}
                   sx={{
                     width: '100%',
-                    height: { xs: '300px', sm: '400px', md: '500px' },
+                    height: { xs: 200, sm: 280, md: 340 },
                     objectFit: 'cover',
+                    borderRadius: 3,
                     transition: 'transform 0.3s ease',
                     '&:hover': {
-                      transform: 'scale(1.05)',
+                      transform: 'scale(1.03)',
                     },
                   }}
                 />
@@ -641,30 +569,30 @@ const Home: React.FC = () => {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
                   color: 'white',
-                  p: { xs: 3, sm: 4, md: 5 },
+                  p: { xs: 2, sm: 3 },
                   textAlign: { xs: 'center', md: 'left' },
                 }}
               >
-                <Typography 
-                  variant="h3" 
+                <Typography
+                  variant="h5"
                   gutterBottom
                   sx={{
-                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
                     fontWeight: 700,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2rem' },
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
                   }}
                 >
                   {item.title}
                 </Typography>
-                <Typography 
-                  variant="h6"
+                <Typography
+                  variant="body1"
                   sx={{
-                    fontSize: { xs: '1rem', sm: '1.2rem', md: '1.4rem' },
-                    maxWidth: '600px',
-                    opacity: 0.9,
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                    maxWidth: '700px',
+                    opacity: 0.85,
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.15)',
                   }}
                 >
                   {item.description}
@@ -957,11 +885,11 @@ const Home: React.FC = () => {
           </Box>
           {favorites.length > 0 ? (
             <Grid container spacing={3}>
-              {featuredProducts
-                  .filter((product: any) => favorites.includes(product._id))
-                  .map((product: any) => (
-                    <Grid item xs={12} sm={6} md={3} key={product._id}>
-                      {renderProductCard(product)}
+              {uniqueProducts
+                .filter((product: any) => favorites.includes(product._id))
+                .map((product: any) => (
+                  <Grid item xs={12} sm={6} md={3} key={product._id}>
+                    {renderProductCard(product)}
                   </Grid>
                 ))}
             </Grid>
@@ -1032,12 +960,12 @@ const Home: React.FC = () => {
           </Box>
           <Grid container spacing={3}>
             {challenges.map((challenge) => (
-              <Grid item xs={12} sm={6} md={3} key={challenge.id}>
+              <Grid item xs={12} sm={6} md={3} key={challenge._id}>
                 <EventCard
                   {...challenge}
                   type="challenge"
                   buttonText="Tham gia ngay"
-                  onClick={() => handleJoinChallenge(challenge.id)}
+                  onClick={() => handleJoinChallenge(challenge._id)}
                 />
               </Grid>
             ))}
