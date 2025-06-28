@@ -26,6 +26,7 @@ import {
   Badge as EmployeesIcon,
   Inventory2 as ProductsIcon2,
   CalendarMonth as CalendarIcon,
+  EmojiEvents as ChallengesIcon,
   Reviews as ReviewsIcon,
   Settings as SettingsIcon,
   HelpCenter as HelpCenterIcon,
@@ -42,6 +43,7 @@ const mainMenu = [
   { text: 'Orders', icon: <OrdersIcon />, path: '/orders' },
   { text: 'Customers', icon: <CustomersIcon />, path: '/customers' },
   { text: 'Sales Calendar', icon: <CalendarIcon />, path: '/calendar' },
+  { text: 'Challenges', icon: <ChallengesIcon />, path: '/challenges' },
   { text: 'Reviews', icon: <ReviewsIcon />, path: '/reviews' },
   { text: 'Chat', icon: <ChatIcon />, path: '/chat' },
 ];

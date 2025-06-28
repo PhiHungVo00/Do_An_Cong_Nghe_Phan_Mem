@@ -8,21 +8,9 @@ const Challenge = require('../models/Challenge');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-// Tạo 50 sản phẩm duy nhất dựa trên 8 mẫu có sẵn
+// Tạo 50 sản phẩm duy nhất dựa trên các ảnh có sẵn
 const categories = ['Điện Gia Dụng', 'Nhà Bếp', 'Điện Tử', 'Gia Dụng Thông Minh', 'Thiết Bị Nhà Bếp', 'Thiết Bị Điện', 'Thiết Bị Thông Minh', 'Đồ Gia Dụng'];
 const brands = ['Samsung', 'Xiaomi', 'Philips', 'DeLonghi', 'LG', 'Panasonic', 'Sony', 'Sharp', 'Electrolux', 'Toshiba'];
-const productNames = [
-  'Máy Lọc Không Khí', 'Robot Hút Bụi', 'Nồi Chiên Không Dầu', 'Máy Pha Cà Phê', 'Smart TV', 'Tủ Lạnh', 'Máy Giặt', 'Lò Vi Sóng',
-  'Máy Sấy Quần Áo', 'Bếp Điện Từ', 'Máy Rửa Chén', 'Máy Lọc Nước', 'Bình Đun Siêu Tốc', 'Quạt Điều Hòa', 'Máy Hút Mùi',
-  'Máy Sưởi', 'Máy Xay Sinh Tố', 'Nồi Cơm Điện', 'Bàn Ủi Hơi Nước', 'Máy Làm Sữa Hạt', 'Máy Làm Bánh Mì', 'Máy Làm Sữa Chua',
-  'Máy Làm Kem', 'Máy Đánh Trứng', 'Máy Vắt Cam', 'Máy Xay Thịt', 'Máy Lọc Nước Nóng Lạnh', 'Máy Lọc Không Khí Mini',
-  'Máy Lọc Không Khí Ô Tô', 'Máy Lọc Không Khí Cầm Tay', 'Máy Lọc Không Khí Di Động', 'Máy Lọc Không Khí Để Bàn',
-  'Máy Lọc Không Khí Cao Cấp', 'Máy Lọc Không Khí Giá Rẻ', 'Máy Lọc Không Khí Thông Minh', 'Máy Lọc Không Khí Tự Động',
-  'Máy Lọc Không Khí Công Nghiệp', 'Máy Lọc Không Khí Gia Đình', 'Máy Lọc Không Khí Văn Phòng', 'Máy Lọc Không Khí Mini USB',
-  'Máy Lọc Không Khí Pin Sạc', 'Máy Lọc Không Khí Đa Năng', 'Máy Lọc Không Khí 2 Trong 1', 'Máy Lọc Không Khí 3 Trong 1',
-  'Máy Lọc Không Khí 4 Trong 1', 'Máy Lọc Không Khí 5 Trong 1', 'Máy Lọc Không Khí 6 Trong 1', 'Máy Lọc Không Khí 7 Trong 1',
-  'Máy Lọc Không Khí 8 Trong 1', 'Máy Lọc Không Khí 9 Trong 1'
-];
 
 const productImageNameMap = [
   { image: 'tulanh.jpg', name: 'Tủ Lạnh' },
@@ -61,8 +49,18 @@ const productImageNameMap = [
   { image: 'bepdientu.jpg', name: 'Bếp Điện Từ' },
   { image: 'bepdientu2.jpg', name: 'Bếp Điện Từ' },
   { image: 'bepdientu3.jpg', name: 'Bếp Điện Từ' },
+  { image: 'maydieuhoadaikin.jpg', name: 'Máy Điều Hòa' },
+  { image: 'dennguthongminh.jpg', name: 'Đèn Ngủ Thông Minh' },
+  { image: 'maytaoam.jpg', name: 'Máy Tạo Ẩm' },
+  { image: 'maynuocnong.jpg', name: 'Máy Nước Nóng' },
+  { image: 'voisen.jpg', name: 'Vòi Sen' },
+  { image: 'maysaytoc.jpg', name: 'Máy Sấy Tóc' },
+  { image: 'amsieutoc.jpg', name: 'Bình Đun Siêu Tốc' },
+  { image: 'quatthongminhxiaomi.jpg', name: 'Quạt Thông Minh' },
+  { image: 'ocamthongminh.jpg', name: 'Ổ Cắm Thông Minh' },
+  { image: 'denledthongminh.jpg', name: 'Đèn LED Thông Minh' },
+  { image: 'camerathongminh.jpg', name: 'Camera Thông Minh' }
 ];
-const productImages = productImageNameMap.map(item => item.image);
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -143,6 +141,7 @@ const saleEventTitles = [
   'Back To School Ưu Đãi',
   'Tết Sale Rộn Ràng'
 ];
+
 const saleEventImages = [
   'https://source.unsplash.com/800x400/?kitchen-appliance',
   'https://source.unsplash.com/800x400/?tech-event',
@@ -153,6 +152,7 @@ const saleEventImages = [
   'https://source.unsplash.com/800x400/?back-to-school',
   'https://source.unsplash.com/800x400/?tet-sale'
 ];
+
 const saleEventBannerImages = [
   'https://source.unsplash.com/1200x300/?kitchen-sale',
   'https://source.unsplash.com/1200x300/?tech-launch',
@@ -163,6 +163,7 @@ const saleEventBannerImages = [
   'https://source.unsplash.com/1200x300/?back-to-school-banner',
   'https://source.unsplash.com/1200x300/?tet-banner'
 ];
+
 const saleEventTypes = ['promotion', 'event', 'promotion', 'promotion', 'promotion', 'promotion', 'event', 'promotion'];
 const saleEventLocations = ['Toàn quốc', 'Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Toàn quốc', 'Hà Nội', 'TP.HCM', 'Toàn quốc'];
 
@@ -178,6 +179,7 @@ const challengeImages = [
   `${CHALLENGE_DOMAIN}/assets/challenges/challenge7.jpg`,
   `${CHALLENGE_DOMAIN}/assets/challenges/challenge8.jpg`,
 ];
+
 const eventImages = [
   `${EVENT_DOMAIN}/assets/events/event1.jpg`,
   `${EVENT_DOMAIN}/assets/events/event2.jpg`,
@@ -198,14 +200,14 @@ const sampleSalesEvents = Array.from({ length: 8 }, (_, i) => ({
   startDate: new Date(2024, 0, 1 + i * 15),
   endDate: new Date(2024, 0, 10 + i * 15),
   type: saleEventTypes[i],
-    status: 'active',
+  status: 'active',
   location: saleEventLocations[i],
   participants: [],
   maxParticipants: 1000 + i * 100,
   budget: 20000000 + i * 5000000,
   notes: `Sự kiện ${saleEventTitles[i]} đặc biệt`,
   discountPercentage: 20 + i * 5,
-    isPublic: true,
+  isPublic: true,
   priority: i + 1
 }));
 
@@ -219,6 +221,7 @@ const challengeTitles = [
   'Dọn Dẹp Nhà Cửa',
   'Chia Sẻ Yêu Thương'
 ];
+
 const challengeDescriptions = [
   'Giảm 20% hóa đơn điện nước trong tháng này bằng cách sử dụng thiết bị tiết kiệm năng lượng.',
   'Tham gia các hoạt động bảo vệ môi trường như trồng cây, đi xe đạp, hạn chế rác thải.',
@@ -229,6 +232,7 @@ const challengeDescriptions = [
   'Dành 1 giờ mỗi tuần để dọn dẹp, sắp xếp lại không gian sống.',
   'Chia sẻ đồ dùng, quần áo hoặc thực phẩm cho người khó khăn xung quanh bạn.'
 ];
+
 const challengeRewards = [
   '500.000 VNĐ',
   'Voucher mua sắm 300.000 VNĐ',
@@ -239,15 +243,24 @@ const challengeRewards = [
   'Phiếu giảm giá 20%',
   'Quà tặng bí mật'
 ];
+
 const sampleChallenges = Array.from({ length: 8 }, (_, i) => ({
   title: challengeTitles[i],
   description: challengeDescriptions[i],
+  shortDescription: challengeDescriptions[i].substring(0, 100) + '...',
   image: challengeImages[i % challengeImages.length],
+  bannerImage: challengeImages[i % challengeImages.length],
   reward: challengeRewards[i],
-  participants: Math.floor(Math.random() * 1000) + 100,
+  participants: [],
+  maxParticipants: Math.floor(Math.random() * 1000) + 100,
   startDate: new Date(2024, 3, 1 + i * 3),
   endDate: new Date(2024, 3, 3 + i * 3),
-  status: i === 0 ? 'active' : (i < 3 ? 'upcoming' : 'ended')
+  type: ['shopping', 'social', 'creative', 'other'][i % 4],
+  status: i === 0 ? 'active' : (i < 3 ? 'draft' : 'inactive'),
+  requirements: `Yêu cầu tham gia thử thách ${i + 1}: Hoàn thành các nhiệm vụ được giao trong thời gian quy định.`,
+  rules: `Luật chơi thử thách ${i + 1}: Tuân thủ các quy định và không gian lận trong quá trình tham gia.`,
+  isPublic: true,
+  priority: i + 1
 }));
 
 // Bổ sung seed cho các category dạng key tiếng Anh để đồng bộ với frontend
@@ -356,8 +369,8 @@ const englishCategoryProducts = [
     soldCount: 70,
     category: 'livingroom',
     brand: 'LG',
-    image: '/assets/products/maylocnuoc.jpg',
-    images: ['/assets/products/maylocnuoc.jpg'],
+    image: '/assets/products/maylockk.jpg',
+    images: ['/assets/products/maylockk.jpg'],
     rating: 4.7,
     reviewCount: 167,
     specifications: 'Cảm biến PM2.5, lọc 5 lớp',
@@ -379,8 +392,8 @@ const englishCategoryProducts = [
     soldCount: 50,
     category: 'livingroom',
     brand: 'Xiaomi',
-    image: '/assets/products/smart.jpg',
-    images: ['/assets/products/smart.jpg'],
+    image: '/assets/products/quatthongminhxiaomi.jpg',
+    images: ['/assets/products/quatthongminhxiaomi.jpg'],
     rating: 4.5,
     reviewCount: 145,
     specifications: 'Điều khiển từ xa, 100 cấp độ gió',
@@ -403,8 +416,8 @@ const englishCategoryProducts = [
     soldCount: 40,
     category: 'bedroom',
     brand: 'Daikin',
-    image: '/assets/products/bedroom.jpg',
-    images: ['/assets/products/bedroom.jpg'],
+    image: '/assets/products/maydieuhoadaikin.jpg',
+    images: ['/assets/products/maydieuhoadaikin.jpg'],
     rating: 4.8,
     reviewCount: 223,
     specifications: '12000 BTU, inverter',
@@ -426,8 +439,8 @@ const englishCategoryProducts = [
     soldCount: 30,
     category: 'bedroom',
     brand: 'Mi Home',
-    image: '/assets/products/bedroom.jpg',
-    images: ['/assets/products/bedroom.jpg'],
+    image: '/assets/products/dennguthongminh.jpg',
+    images: ['/assets/products/dennguthongminh.jpg'],
     rating: 4.4,
     reviewCount: 134,
     specifications: 'Điều chỉnh màu, cảm ứng',
@@ -449,8 +462,8 @@ const englishCategoryProducts = [
     soldCount: 20,
     category: 'bedroom',
     brand: 'Beurer',
-    image: '/assets/products/bedroom.jpg',
-    images: ['/assets/products/bedroom.jpg'],
+    image: '/assets/products/maytaoam.jpg',
+    images: ['/assets/products/maytaoam.jpg'],
     rating: 4.5,
     reviewCount: 156,
     specifications: 'Siêu âm, đèn LED',
@@ -473,8 +486,8 @@ const englishCategoryProducts = [
     soldCount: 25,
     category: 'bathroom',
     brand: 'Ariston',
-    image: '/assets/products/bathroom.jpg',
-    images: ['/assets/products/bathroom.jpg'],
+    image: '/assets/products/maynuocnong.jpg',
+    images: ['/assets/products/maynuocnong.jpg'],
     rating: 4.7,
     reviewCount: 189,
     specifications: 'Công suất 4500W',
@@ -496,8 +509,8 @@ const englishCategoryProducts = [
     soldCount: 15,
     category: 'bathroom',
     brand: 'TOTO',
-    image: '/assets/products/bathroom.jpg',
-    images: ['/assets/products/bathroom.jpg'],
+    image: '/assets/products/voisen.jpg',
+    images: ['/assets/products/voisen.jpg'],
     rating: 4.6,
     reviewCount: 145,
     specifications: 'Massage, điều chỉnh áp lực',
@@ -519,8 +532,8 @@ const englishCategoryProducts = [
     soldCount: 10,
     category: 'bathroom',
     brand: 'Panasonic',
-    image: '/assets/products/bathroom.jpg',
-    images: ['/assets/products/bathroom.jpg'],
+    image: '/assets/products/maysaytoc.jpg',
+    images: ['/assets/products/maysaytoc.jpg'],
     rating: 4.5,
     reviewCount: 100,
     specifications: 'Công suất 2000W',
@@ -566,8 +579,8 @@ const englishCategoryProducts = [
     soldCount: 20,
     category: 'appliance',
     brand: 'Sharp',
-    image: '/assets/products/appliance.jpg',
-    images: ['/assets/products/appliance.jpg'],
+    image: '/assets/products/amsieutoc.jpg',
+    images: ['/assets/products/amsieutoc.jpg'],
     rating: 4.3,
     reviewCount: 90,
     specifications: 'Công suất 1500W, 1.8L',
@@ -598,7 +611,7 @@ const englishCategoryProducts = [
     sku: 'PANASONIC-APPLIANCE-003',
     supplier: 'Panasonic Vietnam',
     barcode: '880000000015',
-    tags: ['máy sấy', 'appliance', 'panasonic'],
+    tags: ['máy sấy quần áo', 'appliance', 'panasonic'],
     featured: false,
     isActive: true
   },
@@ -613,8 +626,8 @@ const englishCategoryProducts = [
     soldCount: 40,
     category: 'smart',
     brand: 'Xiaomi',
-    image: '/assets/products/smart.jpg',
-    images: ['/assets/products/smart.jpg'],
+    image: '/assets/products/ocamthongminh.jpg',
+    images: ['/assets/products/ocamthongminh.jpg'],
     rating: 4.5,
     reviewCount: 110,
     specifications: 'Điều khiển từ xa, hẹn giờ',
@@ -636,8 +649,8 @@ const englishCategoryProducts = [
     soldCount: 30,
     category: 'smart',
     brand: 'Philips',
-    image: '/assets/products/smart.jpg',
-    images: ['/assets/products/smart.jpg'],
+    image: '/assets/products/denledthongminh.jpg',
+    images: ['/assets/products/denledthongminh.jpg'],
     rating: 4.6,
     reviewCount: 95,
     specifications: 'Đổi màu, điều khiển app',
@@ -659,8 +672,8 @@ const englishCategoryProducts = [
     soldCount: 20,
     category: 'smart',
     brand: 'Ezviz',
-    image: '/assets/products/smart.jpg',
-    images: ['/assets/products/smart.jpg'],
+    image: '/assets/products/camerathongminh.jpg',
+    images: ['/assets/products/camerathongminh.jpg'],
     rating: 4.4,
     reviewCount: 80,
     specifications: 'Kết nối wifi, báo động',
@@ -671,7 +684,7 @@ const englishCategoryProducts = [
     tags: ['camera', 'smart', 'ezviz'],
     featured: false,
     isActive: true
-  },
+  }
 ];
 
 const seedData = async () => {
@@ -704,6 +717,10 @@ const seedData = async () => {
     const createdProducts = await Product.insertMany(sampleProducts);
     console.log(`Created ${createdProducts.length} products`);
 
+    // Thêm các sản phẩm tiếng Anh vào database
+    await Product.insertMany(englishCategoryProducts);
+    console.log(`Created ${englishCategoryProducts.length} English category products`);
+
     // Create sales events
     const adminUser = await User.findOne({ role: 'admin' });
     for (const eventData of sampleSalesEvents) {
@@ -716,12 +733,14 @@ const seedData = async () => {
     console.log(`Created ${sampleSalesEvents.length} sales events`);
 
     // Insert challenges
-    await Challenge.deleteMany({});
-    await Challenge.insertMany(sampleChallenges);
+    for (const challengeData of sampleChallenges) {
+      const challenge = new Challenge({
+        ...challengeData,
+        createdBy: adminUser._id
+      });
+      await challenge.save();
+    }
     console.log(`Created ${sampleChallenges.length} challenges`);
-
-    // Thêm các sản phẩm tiếng Anh vào database
-    await Product.insertMany(englishCategoryProducts);
 
     console.log('Data seeding completed successfully!');
     console.log('\nSample accounts:');

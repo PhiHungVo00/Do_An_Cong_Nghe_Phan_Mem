@@ -209,7 +209,7 @@ const LiveEvents: React.FC = () => {
         </Typography>
         <Typography variant="h6" color="#b0b3b8" align="center" sx={{ mb: 2 }}>
           Khám phá các sản phẩm mới, ưu đãi độc quyền và nhận quà hấp dẫn khi tham gia livestream cùng chúng tôi!
-        </Typography>
+              </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', justifyContent: 'center', mb: 2 }}>
           <Chip icon={<TrendingUp />} label="Đang diễn ra" color="error" sx={{ fontWeight: 600, bgcolor: 'error.main', color: '#fff' }} />
           <Chip icon={<Whatshot />} label="Siêu sale" color="warning" sx={{ fontWeight: 600 }} />
@@ -240,7 +240,7 @@ const LiveEvents: React.FC = () => {
       <Box sx={{ flex: 1, minWidth: 320, maxWidth: 400, bgcolor: '#23272f', borderRadius: 4, boxShadow: 3, p: 2, display: { xs: 'none', md: 'flex' }, flexDirection: 'column', height: 600 }}>
         <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 2 }}>
           Chat trực tiếp
-        </Typography>
+              </Typography>
         <Box sx={{ flex: 1, overflowY: 'auto', mb: 2, pr: 1 }}>
           {/* Chat messages mockup */}
           <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -253,21 +253,21 @@ const LiveEvents: React.FC = () => {
             <Avatar src="https://source.unsplash.com/50x50/?user2" sx={{ width: 28, height: 28 }} />
             <Box sx={{ bgcolor: '#1976d2', color: '#fff', px: 2, py: 1, borderRadius: 2, fontSize: 14 }}>
               Còn bạn nhé! Mua ngay để nhận ưu đãi.
-            </Box>
-          </Box>
+                    </Box>
+                  </Box>
           <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar src="https://source.unsplash.com/50x50/?user3" sx={{ width: 28, height: 28 }} />
             <Box sx={{ bgcolor: '#31343b', color: '#fff', px: 2, py: 1, borderRadius: 2, fontSize: 14 }}>
               Có freeship không shop?
-            </Box>
-          </Box>
+                      </Box>
+                    </Box>
           <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1, flexDirection: 'row-reverse' }}>
             <Avatar src="https://source.unsplash.com/50x50/?user2" sx={{ width: 28, height: 28 }} />
             <Box sx={{ bgcolor: '#1976d2', color: '#fff', px: 2, py: 1, borderRadius: 2, fontSize: 14 }}>
               Có freeship toàn quốc cho đơn từ 500k nhé!
-            </Box>
-          </Box>
-        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
         {/* Input mockup */}
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Avatar src="https://source.unsplash.com/50x50/?user4" sx={{ width: 28, height: 28 }} />

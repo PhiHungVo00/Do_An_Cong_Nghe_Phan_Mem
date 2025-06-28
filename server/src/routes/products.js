@@ -158,6 +158,12 @@ router.post('/', auth, adminAuth, async (req, res) => {
     await product.save();
     res.status(201).json(product);
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.sku) {
+      return res.status(409).json({ 
+        message: 'Mã SKU này đã tồn tại. Vui lòng chọn mã SKU khác.',
+        field: 'sku'
+      });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -186,6 +192,12 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
     await product.save();
     res.json(product);
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.sku) {
+      return res.status(409).json({ 
+        message: 'Mã SKU này đã tồn tại. Vui lòng chọn mã SKU khác.',
+        field: 'sku'
+      });
+    }
     res.status(400).json({ message: error.message });
   }
 });

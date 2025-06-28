@@ -408,10 +408,23 @@ const Challenges: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        console.log('Fetching challenges from API...');
         const res = await challengeAPI.getAll();
+        console.log('API response:', res);
         const challengeData = Array.isArray(res) ? res : (res?.challenges || []);
-        setChallenges(challengeData);
+        console.log('Processed challenge data:', challengeData);
+        console.log('Number of challenges:', challengeData.length);
+        
+        // Map _id to id for compatibility with Challenge interface
+        const mappedChallenges = challengeData.map((challenge: any) => ({
+          ...challenge,
+          id: challenge._id || challenge.id
+        }));
+        
+        console.log('Mapped challenges:', mappedChallenges);
+        setChallenges(mappedChallenges);
       } catch (err) {
+        console.error('Error fetching challenges:', err);
         setError('Không thể tải thử thách. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
@@ -455,8 +468,9 @@ const Challenges: React.FC = () => {
       ) : error ? (
         <Alert severity="error">{error}</Alert>
       ) : (
-        <Grid container spacing={3}>
+      <Grid container spacing={3}>
           {challenges.map((challenge) => {
+            console.log('Rendering challenge:', challenge);
             const image =
               'image' in challenge
                 ? (challenge as any).image
@@ -466,21 +480,21 @@ const Challenges: React.FC = () => {
                 ? (challenge as any).reward
                 : challenge.rewards?.[0]?.description || '';
             return (
-              <Grid item xs={12} sm={6} md={4} key={challenge.id}>
+          <Grid item xs={12} sm={6} md={4} key={challenge.id}>
                 <HomeChallengeCard
                   title={challenge.title}
                   description={challenge.description}
                   image={image}
                   reward={reward}
                   participants={challenge.participants || 0}
-                  progress={0}
+              progress={0}
                   daysLeft={Math.max(0, Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
                   onJoin={() => {}}
-                />
-              </Grid>
+            />
+          </Grid>
             );
           })}
-        </Grid>
+      </Grid>
       )}
 
       {/* Challenge Detail Dialog */}

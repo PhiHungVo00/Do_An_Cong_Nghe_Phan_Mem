@@ -39,11 +39,25 @@ interface SalesEvent {
   participants: string[];
   budget: number;
   notes: string;
+  shortDescription?: string;
+  image?: string;
+  bannerImage?: string;
+  maxParticipants?: number;
+  products?: string[];
+  discountPercentage?: number;
+  isPublic?: boolean;
+  priority?: number;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const validationSchema = yup.object({
   title: yup.string().required('Vui lòng nhập tiêu đề sự kiện'),
   description: yup.string(),
+  shortDescription: yup.string(),
+  image: yup.string(),
+  bannerImage: yup.string(),
   startDate: yup.date().required('Vui lòng chọn ngày bắt đầu'),
   endDate: yup.date()
     .required('Vui lòng chọn ngày kết thúc')
@@ -52,8 +66,13 @@ const validationSchema = yup.object({
   status: yup.string().required('Vui lòng chọn trạng thái'),
   location: yup.string(),
   participants: yup.array().of(yup.string()),
+  maxParticipants: yup.number().min(0, 'Số lượng tối đa phải lớn hơn hoặc bằng 0'),
   budget: yup.number().min(0, 'Ngân sách phải lớn hơn hoặc bằng 0'),
   notes: yup.string(),
+  products: yup.array().of(yup.string()),
+  discountPercentage: yup.number().min(0, 'Phần trăm giảm giá phải lớn hơn hoặc bằng 0').max(100, 'Phần trăm giảm giá không được vượt quá 100%'),
+  isPublic: yup.boolean(),
+  priority: yup.number().min(0, 'Độ ưu tiên phải lớn hơn hoặc bằng 0')
 });
 
 const CustomDatePicker: React.FC<{
@@ -73,14 +92,55 @@ const CustomDatePicker: React.FC<{
 };
 
 const EVENT_COLORS: Record<string, {bg: string, color: string}> = {
-  'Khuyến mãi': { bg: '#E1EAF8', color: '#1A237E' },
-  'Sự kiện': { bg: '#B2DFDB', color: '#00695C' },
-  'Họp': { bg: '#FFF9C4', color: '#F57C00' },
-  'Khác': { bg: '#E0E0E0', color: '#424242' },
+  'promotion': { bg: '#E1EAF8', color: '#1A237E' },
+  'event': { bg: '#B2DFDB', color: '#00695C' },
+  'meeting': { bg: '#FFF9C4', color: '#F57C00' },
+  'other': { bg: '#E0E0E0', color: '#424242' },
+};
+
+// Mapping functions for type and status
+const typeToVi = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'promotion': 'Khuyến mãi',
+    'event': 'Sự kiện',
+    'meeting': 'Họp',
+    'other': 'Khác'
+  };
+  return typeMap[type] || type;
+};
+
+const typeToEn = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'Khuyến mãi': 'promotion',
+    'Sự kiện': 'event',
+    'Họp': 'meeting',
+    'Khác': 'other'
+  };
+  return typeMap[type] || type;
+};
+
+const statusToVi = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'draft': 'Chưa bắt đầu',
+    'active': 'Đang diễn ra',
+    'inactive': 'Đã kết thúc',
+    'cancelled': 'Đã hủy'
+  };
+  return statusMap[status] || status;
+};
+
+const statusToEn = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'Chưa bắt đầu': 'draft',
+    'Đang diễn ra': 'active',
+    'Đã kết thúc': 'inactive',
+    'Đã hủy': 'cancelled'
+  };
+  return statusMap[status] || status;
 };
 
 const getEventBoxStyle = (type: string) => {
-  const c = EVENT_COLORS[type] || EVENT_COLORS['Khác'];
+  const c = EVENT_COLORS[type] || EVENT_COLORS['other'];
   return {
     background: c.bg,
     color: c.color,
@@ -153,7 +213,12 @@ const SalesCalendar: React.FC = () => {
       });
 
       const mappedEvents = Array.isArray(response.data)
-        ? response.data.map((event: any) => ({ ...event, id: event._id }))
+        ? response.data.map((event: any) => ({ 
+            ...event, 
+            id: event._id,
+            type: typeToVi(event.type),
+            status: statusToVi(event.status)
+          }))
         : [];
       setEvents(mappedEvents);
       setError(null);
@@ -175,8 +240,8 @@ const SalesCalendar: React.FC = () => {
   const handleAdd = () => {
     setSelectedEvent(null);
     setFormData({
-      type: 'Khuyến mãi',
-      status: 'Chưa bắt đầu',
+      type: 'promotion',
+      status: 'draft',
       participants: [],
       budget: 0
     });
@@ -186,7 +251,11 @@ const SalesCalendar: React.FC = () => {
 
   const handleEdit = (event: SalesEvent) => {
     setSelectedEvent(event);
-    setFormData(event);
+    setFormData({
+      ...event,
+      type: typeToEn(event.type),
+      status: statusToEn(event.status)
+    });
     setErrors({});
     setOpen(true);
   };
@@ -261,6 +330,21 @@ const SalesCalendar: React.FC = () => {
         return;
       }
 
+      // Convert data to backend format
+      const eventData = {
+        ...formData,
+        type: typeToEn(formData.type || 'promotion'),
+        status: statusToEn(formData.status || 'draft'),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        participants: formData.participants || [],
+        budget: Number(formData.budget) || 0,
+        maxParticipants: Number(formData.maxParticipants) || 0,
+        discountPercentage: Number(formData.discountPercentage) || 0,
+        isPublic: formData.isPublic !== undefined ? formData.isPublic : true,
+        priority: Number(formData.priority) || 0
+      };
+
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -270,13 +354,13 @@ const SalesCalendar: React.FC = () => {
       if (selectedEvent) {
         await axios.put(
           `http://localhost:5000/api/sales-events/${selectedEvent.id}`, 
-          formData,
+          eventData,
           { headers }
         );
       } else {
         await axios.post(
           'http://localhost:5000/api/sales-events', 
-          formData,
+          eventData,
           { headers }
         );
       }
@@ -284,6 +368,12 @@ const SalesCalendar: React.FC = () => {
       await fetchEvents();
       handleClose();
       setError(null);
+      // Hiển thị thông báo thành công
+      if (selectedEvent) {
+        alert('Cập nhật sự kiện thành công!');
+      } else {
+        alert('Thêm sự kiện thành công!');
+      }
     } catch (err) {
       console.error('Error details:', err);
       if (err instanceof yup.ValidationError) {
@@ -294,6 +384,8 @@ const SalesCalendar: React.FC = () => {
           }
         });
         setErrors(newErrors);
+        setError('Vui lòng kiểm tra lại thông tin đã nhập');
+        return;
       } else if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
           setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
@@ -512,10 +604,10 @@ const SalesCalendar: React.FC = () => {
                 error={!!errors.type}
                 label="Loại sự kiện"
               >
-                <MenuItem value="Khuyến mãi">Khuyến mãi</MenuItem>
-                <MenuItem value="Sự kiện">Sự kiện</MenuItem>
-                <MenuItem value="Họp">Họp</MenuItem>
-                <MenuItem value="Khác">Khác</MenuItem>
+                <MenuItem value="promotion">Khuyến mãi</MenuItem>
+                <MenuItem value="event">Sự kiện</MenuItem>
+                <MenuItem value="meeting">Họp</MenuItem>
+                <MenuItem value="other">Khác</MenuItem>
               </Select>
             </FormControl>
             <FormControl fullWidth sx={{ mb: 2 }}>
@@ -527,10 +619,10 @@ const SalesCalendar: React.FC = () => {
                 error={!!errors.status}
                 label="Trạng thái"
               >
-                <MenuItem value="Chưa bắt đầu">Chưa bắt đầu</MenuItem>
-                <MenuItem value="Đang diễn ra">Đang diễn ra</MenuItem>
-                <MenuItem value="Đã kết thúc">Đã kết thúc</MenuItem>
-                <MenuItem value="Đã hủy">Đã hủy</MenuItem>
+                <MenuItem value="draft">Chưa bắt đầu</MenuItem>
+                <MenuItem value="active">Đang diễn ra</MenuItem>
+                <MenuItem value="inactive">Đã kết thúc</MenuItem>
+                <MenuItem value="cancelled">Đã hủy</MenuItem>
               </Select>
             </FormControl>
             <TextField
@@ -568,6 +660,73 @@ const SalesCalendar: React.FC = () => {
               onChange={handleInputChange}
               error={!!errors.budget}
               helperText={errors.budget}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="maxParticipants"
+              label="Số lượng tối đa"
+              type="number"
+              value={formData.maxParticipants || ''}
+              onChange={handleInputChange}
+              error={!!errors.maxParticipants}
+              helperText={errors.maxParticipants}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="discountPercentage"
+              label="Phần trăm giảm giá (%)"
+              type="number"
+              inputProps={{ min: 0, max: 100 }}
+              value={formData.discountPercentage || ''}
+              onChange={handleInputChange}
+              error={!!errors.discountPercentage}
+              helperText={errors.discountPercentage}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="shortDescription"
+              label="Mô tả ngắn"
+              multiline
+              rows={2}
+              value={formData.shortDescription || ''}
+              onChange={handleInputChange}
+              error={!!errors.shortDescription}
+              helperText={errors.shortDescription}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="image"
+              label="URL hình ảnh"
+              value={formData.image || ''}
+              onChange={handleInputChange}
+              error={!!errors.image}
+              helperText={errors.image}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="bannerImage"
+              label="URL banner"
+              value={formData.bannerImage || ''}
+              onChange={handleInputChange}
+              error={!!errors.bannerImage}
+              helperText={errors.bannerImage}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              name="priority"
+              label="Độ ưu tiên"
+              type="number"
+              inputProps={{ min: 0 }}
+              value={formData.priority || ''}
+              onChange={handleInputChange}
+              error={!!errors.priority}
+              helperText={errors.priority}
               sx={{ mb: 2 }}
             />
             <TextField

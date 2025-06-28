@@ -21,6 +21,7 @@ import Reports from './pages/Reports';
 import Profile from './pages/Profile';
 import Employees from './pages/Employees';
 import SalesCalendar from './pages/SalesCalendar';
+import Challenges from './pages/Challenges';
 import Reviews from './pages/Reviews';
 import Settings from './pages/Settings';
 import HelpCenter from './pages/HelpCenter';
@@ -51,6 +52,7 @@ const App: React.FC = () => {
               <Route path="reports" element={<Reports />} />
               <Route path="profile" element={<Profile />} />
               <Route path="calendar" element={<SalesCalendar />} />
+              <Route path="challenges" element={<Challenges />} />
               <Route path="reviews" element={<Reviews />} />
               <Route path="settings" element={<Settings />} />
               <Route path="help" element={<HelpCenter />} />

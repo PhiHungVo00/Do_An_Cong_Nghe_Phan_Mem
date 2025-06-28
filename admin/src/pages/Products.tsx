@@ -15,6 +15,8 @@ import {
   CircularProgress,
   Alert,
   SelectChangeEvent,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import * as yup from 'yup';
@@ -24,16 +26,25 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
+  discount?: number;
   stock: number;
+  soldCount?: number;
   category: string;
   description: string;
   image: string;
+  images?: string[];
   brand: string;
   rating: number;
-  reviews: number;
+  reviewCount: number;
   specifications: string;
   warranty: string;
   sku: string;
+  supplier?: string;
+  barcode?: string;
+  tags?: string[];
+  isActive?: boolean;
+  featured?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,13 +87,23 @@ const brands = [
 const validationSchema = yup.object({
   name: yup.string().required('Vui lòng nhập tên sản phẩm'),
   price: yup.number().min(0, 'Giá phải lớn hơn hoặc bằng 0').required('Vui lòng nhập giá'),
+  originalPrice: yup.number().min(0, 'Giá gốc phải lớn hơn hoặc bằng 0'),
+  discount: yup.number().min(0, 'Giảm giá phải lớn hơn hoặc bằng 0').max(100, 'Giảm giá không được vượt quá 100%'),
   stock: yup.number().min(0, 'Số lượng phải lớn hơn hoặc bằng 0').required('Vui lòng nhập số lượng'),
+  soldCount: yup.number().min(0, 'Số lượng đã bán phải lớn hơn hoặc bằng 0'),
   category: yup.string().required('Vui lòng chọn danh mục'),
   description: yup.string().required('Vui lòng nhập mô tả'),
+  image: yup.string().required('Vui lòng nhập đường dẫn hình ảnh'),
   brand: yup.string().required('Vui lòng chọn thương hiệu'),
+  rating: yup.number().min(0, 'Đánh giá phải lớn hơn hoặc bằng 0').max(5, 'Đánh giá không được vượt quá 5'),
+  reviewCount: yup.number().min(0, 'Số đánh giá phải lớn hơn hoặc bằng 0'),
   specifications: yup.string().required('Vui lòng nhập thông số kỹ thuật'),
   warranty: yup.string().required('Vui lòng nhập thời gian bảo hành'),
   sku: yup.string().required('Vui lòng nhập mã SKU'),
+  supplier: yup.string(),
+  barcode: yup.string(),
+  isActive: yup.boolean(),
+  featured: yup.boolean()
 });
 
 const Products: React.FC = () => {
@@ -130,16 +151,25 @@ const Products: React.FC = () => {
         id: product._id,
         name: product.name,
         price: product.price,
+        originalPrice: product.originalPrice,
+        discount: product.discount,
         stock: product.stock,
+        soldCount: product.soldCount,
         category: product.category,
         description: product.description,
         image: product.image,
+        images: product.images,
         brand: product.brand,
         rating: product.rating,
-        reviews: product.reviews,
+        reviewCount: product.reviewCount,
         specifications: product.specifications,
         warranty: product.warranty,
         sku: product.sku,
+        supplier: product.supplier,
+        barcode: product.barcode,
+        tags: product.tags,
+        isActive: product.isActive,
+        featured: product.featured,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt
       }));
@@ -173,7 +203,7 @@ const Products: React.FC = () => {
       headerName: 'Hình ảnh', 
       width: 100,
       renderCell: (params) => (
-        <img
+        <img 
           src={
             params.value?.startsWith('/assets/')
               ? `http://localhost:5000${params.value}`
@@ -185,10 +215,11 @@ const Products: React.FC = () => {
       ),
     },
     { field: 'name', headerName: 'Tên sản phẩm', width: 200 },
+    { field: 'sku', headerName: 'SKU', width: 120 },
     { 
       field: 'price', 
       headerName: 'Giá', 
-      width: 150,
+      width: 120,
       valueFormatter: (params) => {
         return new Intl.NumberFormat('vi-VN', {
           style: 'currency',
@@ -196,11 +227,65 @@ const Products: React.FC = () => {
         }).format(params.value as number);
       },
     },
+    { 
+      field: 'originalPrice', 
+      headerName: 'Giá gốc', 
+      width: 120,
+      valueFormatter: (params) => {
+        return params.value ? new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(params.value as number) : '-';
+      },
+    },
+    { 
+      field: 'discount', 
+      headerName: 'Giảm giá', 
+      width: 100,
+      valueFormatter: (params) => {
+        return params.value ? `${params.value}%` : '-';
+      },
+    },
     { field: 'stock', headerName: 'Tồn kho', width: 100 },
+    { field: 'soldCount', headerName: 'Đã bán', width: 100 },
     { field: 'category', headerName: 'Danh mục', width: 150 },
     { field: 'brand', headerName: 'Thương hiệu', width: 120 },
-    { field: 'rating', headerName: 'Đánh giá', width: 100 },
+    { 
+      field: 'rating', 
+      headerName: 'Đánh giá', 
+      width: 100,
+      valueFormatter: (params) => {
+        return params.value ? `${params.value}/5` : '-';
+      },
+    },
+    { field: 'reviewCount', headerName: 'Số đánh giá', width: 120 },
     { field: 'warranty', headerName: 'Bảo hành', width: 120 },
+    { 
+      field: 'isActive', 
+      headerName: 'Trạng thái', 
+      width: 100,
+      renderCell: (params) => (
+        <Box sx={{ 
+          color: params.value ? 'success.main' : 'error.main',
+          fontWeight: 'bold'
+        }}>
+          {params.value ? 'Hoạt động' : 'Không hoạt động'}
+        </Box>
+      ),
+    },
+    { 
+      field: 'featured', 
+      headerName: 'Nổi bật', 
+      width: 100,
+      renderCell: (params) => (
+        <Box sx={{ 
+          color: params.value ? 'primary.main' : 'text.secondary',
+          fontWeight: 'bold'
+        }}>
+          {params.value ? 'Có' : 'Không'}
+        </Box>
+      ),
+    },
     {
       field: 'actions',
       headerName: 'Thao tác',
@@ -360,6 +445,15 @@ const Products: React.FC = () => {
     }
   };
 
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      image: value
+    }));
+    setImagePreview(value);
+  };
+
   const handleSubmit = async () => {
     try {
       // Validate form data
@@ -373,7 +467,7 @@ const Products: React.FC = () => {
 
       // Check for duplicate SKU in the current product list
       const isDuplicateSKU = products.some(product => 
-        product.sku === formData.sku && 
+        product.sku === formData.sku?.trim() && 
         (!selectedProduct || product.id !== selectedProduct.id)
       );
 
@@ -390,20 +484,29 @@ const Products: React.FC = () => {
       const formattedData = {
         name: formData.name?.trim(),
         price: Number(formData.price) || 0,
+        originalPrice: Number(formData.originalPrice) || 0,
+        discount: Number(formData.discount) || 0,
         stock: Number(formData.stock) || 0,
+        soldCount: Number(formData.soldCount) || 0,
         category: formData.category?.trim(),
         description: formData.description?.trim(),
         image: formData.image,
+        images: formData.images || [],
         brand: formData.brand?.trim(),
         rating: Number(formData.rating) || 0,
-        reviews: Number(formData.reviews) || 0,
+        reviewCount: Number(formData.reviewCount) || 0,
         specifications: formData.specifications?.trim(),
         warranty: formData.warranty?.trim(),
-        sku: formData.sku?.trim()
+        sku: formData.sku?.trim(),
+        supplier: formData.supplier?.trim(),
+        barcode: formData.barcode?.trim(),
+        tags: formData.tags || [],
+        isActive: formData.isActive !== undefined ? formData.isActive : true,
+        featured: formData.featured !== undefined ? formData.featured : false
       };
 
       // Validate required fields
-      if (!formattedData.name || !formattedData.category || !formattedData.brand || !formattedData.sku) {
+      if (!formattedData.name || !formattedData.category || !formattedData.brand || !formattedData.sku || !formattedData.image) {
         setError('Vui lòng điền đầy đủ thông tin bắt buộc');
         return;
       }
@@ -438,6 +541,12 @@ const Products: React.FC = () => {
       await fetchProducts();
       handleClose();
       setError(null);
+      // Hiển thị thông báo thành công
+      if (selectedProduct) {
+        alert('Cập nhật sản phẩm thành công!');
+      } else {
+        alert('Thêm sản phẩm thành công!');
+      }
     } catch (err) {
       console.error('Error details:', err);
       if (err instanceof yup.ValidationError) {
@@ -448,6 +557,8 @@ const Products: React.FC = () => {
           }
         });
         setErrors(newErrors);
+        setError('Vui lòng kiểm tra lại thông tin đã nhập');
+        return;
       } else if (axios.isAxiosError(err)) {
         console.error('Server error response:', err.response?.data);
         if (err.response?.status === 401) {
@@ -458,7 +569,31 @@ const Products: React.FC = () => {
           // Hiển thị lỗi cụ thể cho từng trường nếu có
           if (err.response.data?.errors) {
             setErrors(err.response.data.errors);
+          } else if (err.response.data?.message) {
+            // Nếu có lỗi validation cụ thể, hiển thị trong form
+            const errorMessage = err.response.data.message;
+            if (errorMessage.includes('name')) {
+              setErrors(prev => ({ ...prev, name: 'Tên sản phẩm không hợp lệ' }));
+            }
+            if (errorMessage.includes('price')) {
+              setErrors(prev => ({ ...prev, price: 'Giá không hợp lệ' }));
+            }
+            if (errorMessage.includes('stock')) {
+              setErrors(prev => ({ ...prev, stock: 'Số lượng không hợp lệ' }));
+            }
+            if (errorMessage.includes('sku')) {
+              setErrors(prev => ({ ...prev, sku: 'Mã SKU không hợp lệ' }));
+            }
+            if (errorMessage.includes('image')) {
+              setErrors(prev => ({ ...prev, image: 'Hình ảnh không hợp lệ' }));
+            }
           }
+        } else if (err.response?.status === 409) {
+          setError('Mã SKU này đã tồn tại. Vui lòng chọn mã SKU khác.');
+          setErrors(prev => ({
+            ...prev,
+            sku: 'Mã SKU này đã tồn tại'
+          }));
         } else if (err.response?.data?.message?.includes('duplicate key error') && err.response?.data?.message?.includes('sku')) {
           setError('Mã SKU này đã tồn tại. Vui lòng chọn mã SKU khác.');
           setErrors(prev => ({
@@ -622,6 +757,26 @@ const Products: React.FC = () => {
             />
             <TextField
               fullWidth
+              name="originalPrice"
+              label="Giá gốc (VND)"
+              type="number"
+              value={formData.originalPrice || ''}
+              onChange={handleTextChange}
+              error={!!errors.originalPrice}
+              helperText={errors.originalPrice}
+            />
+            <TextField
+              fullWidth
+              name="discount"
+              label="Giảm giá (%)"
+              type="number"
+              value={formData.discount || ''}
+              onChange={handleTextChange}
+              error={!!errors.discount}
+              helperText={errors.discount}
+            />
+            <TextField
+              fullWidth
               name="stock"
               label="Tồn kho"
               type="number"
@@ -629,6 +784,37 @@ const Products: React.FC = () => {
               onChange={handleTextChange}
               error={!!errors.stock}
               helperText={errors.stock}
+            />
+            <TextField
+              fullWidth
+              name="soldCount"
+              label="Đã bán"
+              type="number"
+              value={formData.soldCount || ''}
+              onChange={handleTextChange}
+              error={!!errors.soldCount}
+              helperText={errors.soldCount}
+            />
+            <TextField
+              fullWidth
+              name="rating"
+              label="Đánh giá (0-5)"
+              type="number"
+              inputProps={{ min: 0, max: 5, step: 0.1 }}
+              value={formData.rating || ''}
+              onChange={handleTextChange}
+              error={!!errors.rating}
+              helperText={errors.rating}
+            />
+            <TextField
+              fullWidth
+              name="reviewCount"
+              label="Số đánh giá"
+              type="number"
+              value={formData.reviewCount || ''}
+              onChange={handleTextChange}
+              error={!!errors.reviewCount}
+              helperText={errors.reviewCount}
             />
             <FormControl fullWidth error={!!errors.category}>
               <InputLabel>Danh mục</InputLabel>
@@ -687,6 +873,16 @@ const Products: React.FC = () => {
                   Chọn ảnh sản phẩm
                 </Button>
               </label>
+              <TextField
+                fullWidth
+                name="image"
+                label="Hoặc nhập URL ảnh"
+                value={formData.image || ''}
+                onChange={handleImageUrlChange}
+                error={!!errors.image}
+                helperText={errors.image}
+                sx={{ mb: 2 }}
+              />
               {imagePreview && (
                 <Box sx={{ mt: 2, textAlign: 'center' }}>
                   <img
@@ -723,6 +919,50 @@ const Products: React.FC = () => {
               error={!!errors.description}
               helperText={errors.description}
               sx={{ gridColumn: 'span 2' }}
+            />
+            <TextField
+              fullWidth
+              name="supplier"
+              label="Nhà cung cấp"
+              value={formData.supplier || ''}
+              onChange={handleTextChange}
+              error={!!errors.supplier}
+              helperText={errors.supplier}
+            />
+            <TextField
+              fullWidth
+              name="barcode"
+              label="Mã vạch"
+              value={formData.barcode || ''}
+              onChange={handleTextChange}
+              error={!!errors.barcode}
+              helperText={errors.barcode}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="isActive"
+                  checked={formData.isActive === true}
+                  onChange={(e) => setFormData((prev) => ({
+                    ...prev,
+                    isActive: e.target.checked
+                  }))}
+                />
+              }
+              label="Hoạt động"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="featured"
+                  checked={formData.featured === true}
+                  onChange={(e) => setFormData((prev) => ({
+                    ...prev,
+                    featured: e.target.checked
+                  }))}
+                />
+              }
+              label="Nổi bật"
             />
           </Box>
         </DialogContent>

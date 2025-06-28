@@ -249,7 +249,14 @@ const Home: React.FC = () => {
         // Lấy thử thách
         const challengeRes = await challengeAPI.getAll();
         const challengeData = Array.isArray(challengeRes) ? challengeRes : (challengeRes?.challenges || []);
-        setChallenges(challengeData);
+        
+        // Map _id to id for compatibility
+        const mappedChallenges = challengeData.map((challenge: any) => ({
+          ...challenge,
+          id: challenge._id || challenge.id
+        }));
+        
+        setChallenges(mappedChallenges);
         
       } catch (err) {
         setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
@@ -575,7 +582,7 @@ const Home: React.FC = () => {
                   textAlign: { xs: 'center', md: 'left' },
                 }}
               >
-                <Typography
+                <Typography 
                   variant="h5"
                   gutterBottom
                   sx={{
@@ -586,7 +593,7 @@ const Home: React.FC = () => {
                 >
                   {item.title}
                 </Typography>
-                <Typography
+                <Typography 
                   variant="body1"
                   sx={{
                     fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
@@ -886,10 +893,10 @@ const Home: React.FC = () => {
           {favorites.length > 0 ? (
             <Grid container spacing={3}>
               {uniqueProducts
-                .filter((product: any) => favorites.includes(product._id))
-                .map((product: any) => (
-                  <Grid item xs={12} sm={6} md={3} key={product._id}>
-                    {renderProductCard(product)}
+                  .filter((product: any) => favorites.includes(product._id))
+                  .map((product: any) => (
+                    <Grid item xs={12} sm={6} md={3} key={product._id}>
+                      {renderProductCard(product)}
                   </Grid>
                 ))}
             </Grid>
@@ -960,12 +967,12 @@ const Home: React.FC = () => {
           </Box>
           <Grid container spacing={3}>
             {challenges.map((challenge) => (
-              <Grid item xs={12} sm={6} md={3} key={challenge._id}>
+              <Grid item xs={12} sm={6} md={3} key={challenge.id}>
                 <EventCard
                   {...challenge}
                   type="challenge"
                   buttonText="Tham gia ngay"
-                  onClick={() => handleJoinChallenge(challenge._id)}
+                  onClick={() => handleJoinChallenge(challenge.id)}
                 />
               </Grid>
             ))}
