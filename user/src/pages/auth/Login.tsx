@@ -425,7 +425,7 @@ const Login: React.FC = () => {
               <Typography variant="body1" color="text.secondary">
                 Chưa có tài khoản?{' '}
                 <Link 
-                  to="/auth/register" 
+                  to="/register" 
                   style={{ 
                     textDecoration: 'none',
                     color: theme.palette.primary.main,

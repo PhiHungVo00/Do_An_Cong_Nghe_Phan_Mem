@@ -78,9 +78,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
     );
   }
 
-  // Nếu đã đăng nhập và đang ở trang auth, chuyển về trang chủ
-  if (isAuthenticated && location.pathname.startsWith('/auth')) {
-    console.log('Redirecting to home from auth page');
+  // Nếu đã đăng nhập và đang ở trang login, chuyển về trang chủ
+  if (isAuthenticated && location.pathname === '/auth/login') {
+    console.log('Redirecting to home from login page');
     return <Navigate to="/" replace />;
   }
 

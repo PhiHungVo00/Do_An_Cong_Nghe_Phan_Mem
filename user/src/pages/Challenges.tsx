@@ -321,6 +321,7 @@ const Challenges: React.FC = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [joinedChallenges, setJoinedChallenges] = useState<Set<string>>(new Set());
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -400,7 +401,64 @@ const Challenges: React.FC = () => {
 
   const handleJoinChallenge = (challengeId: string) => {
     console.log('Join challenge:', challengeId);
-    // TODO: Implement challenge join logic
+    
+    // Tìm thử thách được chọn
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (!challenge) {
+      setNotification({
+        open: true,
+        message: '❌ Không tìm thấy thử thách',
+        type: 'error',
+      });
+      return;
+    }
+
+    // Kiểm tra đã tham gia chưa
+    if (joinedChallenges.has(challengeId)) {
+      setNotification({
+        open: true,
+        message: 'ℹ️ Bạn đã tham gia thử thách này rồi!',
+        type: 'info',
+      });
+      return;
+    }
+
+    // Kiểm tra thử thách còn hạn hay hết hạn
+    const now = new Date();
+    const endDate = new Date(challenge.endDate);
+    const isExpired = now > endDate;
+
+    if (isExpired) {
+      // Thử thách đã hết hạn
+      setNotification({
+        open: true,
+        message: '⏰ Thử thách đã hết hạn. Không thể tham gia!',
+        type: 'error',
+      });
+    } else {
+      // Thử thách còn hạn - giả lập đăng ký thành công
+      setNotification({
+        open: true,
+        message: `🎉 Chúc mừng! Bạn đã tham gia thành công thử thách "${challenge.title}"`,
+        type: 'success',
+      });
+      
+      // Lưu trạng thái đã tham gia
+      setJoinedChallenges(prev => {
+        const newSet = new Set(prev);
+        newSet.add(challengeId);
+        return newSet;
+      });
+      
+      // Giả lập cập nhật số người tham gia
+      setChallenges(prevChallenges => 
+        prevChallenges.map(c => 
+          c.id === challengeId 
+            ? { ...c, participants: (c.participants || 0) + 1 }
+            : c
+        )
+      );
+    }
   };
 
   useEffect(() => {
@@ -489,7 +547,8 @@ const Challenges: React.FC = () => {
                   participants={challenge.participants || 0}
               progress={0}
                   daysLeft={Math.max(0, Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
-                  onJoin={() => {}}
+                  onJoin={() => handleJoinChallenge(challenge.id)}
+                  isJoined={joinedChallenges.has(challenge.id)}
             />
           </Grid>
             );
@@ -524,14 +583,28 @@ const Challenges: React.FC = () => {
       {/* Notification */}
       <Snackbar
         open={notification.open}
-        autoHideDuration={6000}
+        autoHideDuration={4000}
         onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+          '& .MuiSnackbarContent-root': {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          }
+        }}
       >
         <Alert
           onClose={() => setNotification({ ...notification, open: false })}
           severity={notification.type}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 3,
+            fontSize: '0.95rem',
+            fontWeight: 500,
+            '& .MuiAlert-icon': {
+              fontSize: '1.5rem',
+            }
+          }}
         >
           {notification.message}
         </Alert>

@@ -13,6 +13,7 @@ import LiveEvents from './pages/LiveEvents';
 import Products from './pages/Products';
 import OrderHistory from './pages/OrderHistory';
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import ShopReview from './pages/ShopReview';
 import Chat from './pages/Chat';
 import { CartProvider } from './contexts/CartContext';
@@ -55,6 +56,7 @@ const App: React.FC = () => {
                   <Route path="/shop-review" element={<ShopReview />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Box>

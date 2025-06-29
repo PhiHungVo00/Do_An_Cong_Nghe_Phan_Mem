@@ -13,6 +13,7 @@ import {
   EmojiEvents as TrophyIcon,
   Timer as TimerIcon,
   Group as GroupIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 
 interface ChallengeCardProps {
@@ -24,6 +25,7 @@ interface ChallengeCardProps {
   progress: number;
   daysLeft: number;
   onJoin: () => void;
+  isJoined?: boolean;
 }
 
 const ChallengeCard: React.FC<ChallengeCardProps> = ({
@@ -35,6 +37,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({
   progress,
   daysLeft,
   onJoin,
+  isJoined,
 }) => {
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -96,12 +99,25 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({
         </Box>
 
         <Button
-          variant="contained"
+          variant={isJoined ? "outlined" : "contained"}
           fullWidth
           onClick={onJoin}
-          sx={{ mt: 'auto' }}
+          disabled={isJoined}
+          startIcon={isJoined ? <CheckIcon /> : undefined}
+          sx={{ 
+            mt: 'auto',
+            ...(isJoined && {
+              color: 'success.main',
+              borderColor: 'success.main',
+              '&:hover': {
+                borderColor: 'success.dark',
+                backgroundColor: 'success.light',
+                color: 'success.dark',
+              }
+            })
+          }}
         >
-          Tham gia ngay
+          {isJoined ? 'Đã tham gia' : 'Tham gia ngay'}
         </Button>
       </CardContent>
     </Card>

@@ -22,6 +22,7 @@ import {
   Phone,
 } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI } from '../../services/api';
 
 const steps = ['Thông tin cá nhân', 'Xác thực email', 'Hoàn tất'];
 
@@ -33,6 +34,7 @@ const Register: React.FC = () => {
 
   // Form fields
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -41,11 +43,12 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [fakeOtp, setFakeOtp] = useState('');
 
   const validateStep = () => {
     switch (activeStep) {
       case 0:
-        if (!fullName || !email || !password || !confirmPassword || !phone) {
+        if (!fullName || !email || !username || !password || !confirmPassword || !phone) {
           setError('Vui lòng điền đầy đủ thông tin.');
           return false;
         }
@@ -63,6 +66,14 @@ const Register: React.FC = () => {
         }
         if (!/^[0-9]{10}$/.test(phone)) {
           setError('Số điện thoại không hợp lệ.');
+          return false;
+        }
+        if (username.length < 3) {
+          setError('Tên đăng nhập phải có ít nhất 3 ký tự.');
+          return false;
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+          setError('Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới.');
           return false;
         }
         break;
@@ -89,18 +100,48 @@ const Register: React.FC = () => {
 
       switch (activeStep) {
         case 0:
-          // TODO: Implement send OTP
+          // Tạo OTP giả 6 số
+          const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+          setFakeOtp(generatedOtp);
+          console.log('🔐 OTP giả được tạo:', generatedOtp);
           await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
           setOtpSent(true);
           break;
         case 1:
-          // TODO: Implement verify OTP
+          // Xác thực OTP giả
+          if (otp !== fakeOtp) {
+            setError('Mã OTP không đúng. Vui lòng kiểm tra lại.');
+            return;
+          }
           await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
           break;
         case 2:
-          // TODO: Implement final registration
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-          navigate('/auth/login');
+          // Hoàn tất đăng ký với API thật
+          try {
+            const userData = {
+              fullName,
+              username,
+              email,
+              password,
+              phone,
+            };
+            
+            const response = await authAPI.register(userData);
+            console.log('✅ Đăng ký thành công:', response);
+            
+            // Hiển thị thông báo thành công
+            setError(null);
+            
+            // Chuyển đến trang đăng nhập sau 2 giây
+            setTimeout(() => {
+              navigate('/login');
+            }, 2000);
+            
+          } catch (err: any) {
+            console.error('❌ Lỗi đăng ký:', err);
+            setError(err?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+            return;
+          }
           return;
       }
 
@@ -116,7 +157,10 @@ const Register: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      // TODO: Implement resend OTP
+      // Tạo OTP giả mới
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setFakeOtp(newOtp);
+      console.log('🔐 OTP giả mới được tạo:', newOtp);
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       setOtpSent(true);
     } catch (err) {
@@ -158,6 +202,21 @@ const Register: React.FC = () => {
                 startAdornment: (
                   <InputAdornment position="start">
                     <Email />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Tên đăng nhập"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Person />
                   </InputAdornment>
                 ),
               }}
@@ -227,6 +286,14 @@ const Register: React.FC = () => {
             <Typography paragraph>
               Chúng tôi đã gửi mã xác thực đến email: {email}
             </Typography>
+            
+            {/* Hiển thị OTP giả cho test */}
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>🔐 OTP giả (chỉ để test):</strong> {fakeOtp}
+              </Typography>
+            </Alert>
+            
             <TextField
               fullWidth
               label="Mã xác thực (OTP)"
@@ -248,12 +315,29 @@ const Register: React.FC = () => {
       case 2:
         return (
           <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Đăng ký thành công!
-            </Typography>
-            <Typography paragraph>
-              Vui lòng đăng nhập để tiếp tục sử dụng dịch vụ.
-            </Typography>
+            {isLoading ? (
+              <>
+                <CircularProgress size={60} sx={{ mb: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Đang tạo tài khoản...
+                </Typography>
+                <Typography paragraph>
+                  Vui lòng chờ trong giây lát.
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="h6" gutterBottom color="success.main">
+                  ✅ Đăng ký thành công!
+                </Typography>
+                <Typography paragraph>
+                  Tài khoản của bạn đã được tạo thành công.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Đang chuyển đến trang đăng nhập...
+                </Typography>
+              </>
+            )}
           </Box>
         );
     }
@@ -308,7 +392,7 @@ const Register: React.FC = () => {
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body2">
             Đã có tài khoản?{' '}
-            <Link to="/auth/login" style={{ textDecoration: 'none' }}>
+            <Link to="/login" style={{ textDecoration: 'none' }}>
               Đăng nhập ngay
             </Link>
           </Typography>
