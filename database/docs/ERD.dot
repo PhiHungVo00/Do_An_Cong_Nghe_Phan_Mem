@@ -1,0 +1,29 @@
+digraph ERD {
+  rankdir=LR;
+  node [shape=record];
+  Users [label="{Users|+id: SERIAL PK\l+username: VARCHAR\l+email: VARCHAR\l+password: VARCHAR\l+role: VARCHAR}"];
+  Products [label="{Products|+id: SERIAL PK\l+name: VARCHAR\l+price: NUMERIC\l+stock: INT}"];
+  Customers [label="{Customers|+id: SERIAL PK\l+name: VARCHAR\l+email: VARCHAR}"];
+  Orders [label="{Orders|+id: SERIAL PK\l+order_number: VARCHAR\l+customer_id: FK\l+total_amount: NUMERIC}"];
+  OrderItems [label="{OrderItems|+order_id: FK\l+product_id: FK\l+quantity: INT}"];
+  Reviews [label="{Reviews|+id: SERIAL PK\l+product_id: FK\l+user_id: FK\l+rating: INT}"];
+  SalesEvents [label="{SalesEvents|+id: SERIAL PK\l+title: VARCHAR}"];
+  SalesEventProducts [label="{SalesEventProducts|+event_id: FK\l+product_id: FK}"];
+  Challenges [label="{Challenges|+id: SERIAL PK\l+title: VARCHAR\l+created_by: FK}"];
+  ChallengeParticipants [label="{ChallengeParticipants|+challenge_id: FK\l+user_id: FK}"];
+  Employees [label="{Employees|+id: SERIAL PK\l+name: VARCHAR\l+position: VARCHAR}"];
+  Messages [label="{Messages|+id: SERIAL PK\l+from_user: FK\l+to_user: FK\l+content: TEXT}"];
+
+  Customers -> Orders [label="1..*", arrowhead=crow];
+  Orders -> OrderItems [label="1..*", arrowhead=crow];
+  Products -> OrderItems [label="1..*", arrowhead=crow];
+  Products -> Reviews [label="1..*", arrowhead=crow];
+  Users -> Reviews [label="1..*", arrowhead=crow];
+  Users -> Messages [label="1..*", arrowhead=crow];
+  Users -> Messages [label="1..*", dir=back];
+  SalesEvents -> SalesEventProducts [label="1..*", arrowhead=crow];
+  Products -> SalesEventProducts [label="1..*", arrowhead=crow];
+  Users -> Challenges [label="1..*", arrowhead=crow];
+  Challenges -> ChallengeParticipants [label="1..*", arrowhead=crow];
+  Users -> ChallengeParticipants [label="1..*", arrowhead=crow];
+}
