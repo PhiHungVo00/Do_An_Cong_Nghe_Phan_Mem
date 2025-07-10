@@ -100,20 +100,23 @@ const Register: React.FC = () => {
 
       switch (activeStep) {
         case 0:
-          // Tạo OTP giả 6 số
-          const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-          setFakeOtp(generatedOtp);
-          console.log('🔐 OTP giả được tạo:', generatedOtp);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-          setOtpSent(true);
-          break;
-        case 1:
-          // Xác thực OTP giả
-          if (otp !== fakeOtp) {
-            setError('Mã OTP không đúng. Vui lòng kiểm tra lại.');
+          // Gửi OTP thật về email
+          try {
+            await authAPI.sendOtp(email);
+            setOtpSent(true);
+          } catch (err: any) {
+            setError(err?.message || 'Không thể gửi mã OTP. Vui lòng thử lại.');
             return;
           }
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+          break;
+        case 1:
+          // Xác thực OTP thật
+          try {
+            await authAPI.verifyOtp(email, otp);
+          } catch (err: any) {
+            setError(err?.message || 'Mã OTP không đúng hoặc đã hết hạn.');
+            return;
+          }
           break;
         case 2:
           // Hoàn tất đăng ký với API thật
@@ -125,26 +128,17 @@ const Register: React.FC = () => {
               password,
               phone,
             };
-            
             const response = await authAPI.register(userData);
-            console.log('✅ Đăng ký thành công:', response);
-            
-            // Hiển thị thông báo thành công
             setError(null);
-            
-            // Chuyển đến trang đăng nhập sau 2 giây
             setTimeout(() => {
               navigate('/login');
             }, 2000);
-            
           } catch (err: any) {
-            console.error('❌ Lỗi đăng ký:', err);
             setError(err?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
             return;
           }
           return;
       }
-
       setActiveStep((prev) => prev + 1);
     } catch (err) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
@@ -157,11 +151,7 @@ const Register: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      // Tạo OTP giả mới
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setFakeOtp(newOtp);
-      console.log('🔐 OTP giả mới được tạo:', newOtp);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await authAPI.sendOtp(email);
       setOtpSent(true);
     } catch (err) {
       setError('Không thể gửi lại mã OTP. Vui lòng thử lại.');

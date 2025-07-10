@@ -113,6 +113,26 @@ export const authAPI = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
+
+  // Gửi OTP về email
+  sendOtp: async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse(response);
+  },
+
+  // Xác thực OTP
+  verifyOtp: async (email: string, otp: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp }),
+    });
+    return handleResponse(response);
+  },
 };
 
 // Order API

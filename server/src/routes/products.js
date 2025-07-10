@@ -300,10 +300,10 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
 router.delete('/clear-all', auth, adminAuth, async (req, res) => {
   try {
     const result = await Product.deleteMany({});
-    res.json({ 
-      message: 'Đã xóa tất cả sản phẩm thành công',
-      deletedCount: result.deletedCount 
-    });
+      res.json({ 
+        message: 'Đã xóa tất cả sản phẩm thành công',
+        deletedCount: result.deletedCount
+      });
   } catch (error) {
     console.error('Error clearing products:', error);
     res.status(500).json({ message: 'Lỗi server khi xóa tất cả sản phẩm' });

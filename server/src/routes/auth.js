@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { sendOtpEmail } = require('../services/sendMailService');
+const crypto = require('crypto');
 
 // Middleware to verify JWT token
 const auth = async (req, res, next) => {
@@ -139,6 +141,46 @@ router.get('/admin', async (req, res) => {
   const admin = await User.findOne({ role: 'admin' });
   if (!admin) return res.status(404).json({ message: 'Không tìm thấy admin' });
   res.json({ _id: admin._id, fullName: admin.fullName, email: admin.email });
+});
+
+// Lưu OTP tạm thời ở RAM
+const otpStore = new Map();
+
+// Gửi OTP xác thực email
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email là bắt buộc' });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: 'Email đã tồn tại' });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Lưu OTP vào Map với thời gian hết hạn
+    otpStore.set(email, { otp, expires: Date.now() + 5 * 60 * 1000 });
+    await sendOtpEmail(email, otp);
+    res.json({ message: 'Đã gửi mã OTP về email' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Xác thực OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Thiếu email hoặc OTP' });
+    const record = otpStore.get(email);
+    if (!record) return res.status(400).json({ message: 'Không tìm thấy OTP' });
+    if (record.otp !== otp) return res.status(400).json({ message: 'Mã OTP không đúng' });
+    if (record.expires < Date.now()) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: 'Mã OTP đã hết hạn' });
+    }
+    // Xác thực thành công, xóa OTP khỏi Map
+    otpStore.delete(email);
+    res.json({ message: 'Xác thực OTP thành công' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router; 

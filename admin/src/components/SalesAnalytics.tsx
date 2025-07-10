@@ -194,12 +194,12 @@ const SalesAnalytics: React.FC = () => {
   }
 
   return (
-    <Card sx={{ borderRadius: 5, boxShadow: 3, mb: 3, p: 0, bgcolor: '#fff' }}>
-      <CardContent sx={{ pb: '20px!important', pt: 3, px: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: 22 }}>
-            Phân tích doanh số
-          </Typography>
+  <Card sx={{ borderRadius: 5, boxShadow: 3, mb: 3, p: 0, bgcolor: '#fff' }}>
+    <CardContent sx={{ pb: '20px!important', pt: 3, px: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, fontSize: 22 }}>
+          Phân tích doanh số
+        </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button 
               variant={period === 'week' ? 'contained' : 'outlined'}
@@ -221,8 +221,8 @@ const SalesAnalytics: React.FC = () => {
               size="small"
             >
               Năm
-            </Button>
-          </Box>
+        </Button>
+      </Box>
         </Box>
         {salesData && (
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -234,18 +234,18 @@ const SalesAnalytics: React.FC = () => {
             </Typography>
           </Box>
         )}
-        <Box sx={{ height: 240, width: '98%', mt: 1, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box sx={{ height: 240, width: '98%', mt: 1, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {salesData && salesData.labels.length > 0 ? (
-            <Line data={chartData} options={chartOptions} />
+        <Line data={chartData} options={chartOptions} />
           ) : (
             <Typography variant="body2" color="text.secondary">
               Không có dữ liệu doanh số
             </Typography>
           )}
-        </Box>
-      </CardContent>
-    </Card>
-  );
+      </Box>
+    </CardContent>
+  </Card>
+);
 };
 
 export default SalesAnalytics; 

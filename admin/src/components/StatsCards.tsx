@@ -186,7 +186,10 @@ const StatsCards: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{stat.title}</Typography>
               </Box>
               <Typography variant="h5" sx={{ fontWeight: 800, fontSize: 28, mt: 1 }}>
-                {typeof stat.value === 'number' ? formatVND(stat.value) : stat.value}
+                {/* Chỉ doanh thu mới dùng formatVND, các thành phần khác chỉ hiển thị số */}
+                {stat.title === 'Tổng doanh thu'
+                  ? (typeof stat.value === 'number' ? formatVND(stat.value) : stat.value)
+                  : stat.value.toLocaleString('vi-VN')}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2" sx={{ color: stat.percentColor, fontWeight: 700 }}>{stat.percent}</Typography>
@@ -196,7 +199,13 @@ const StatsCards: React.FC = () => {
                   <ArrowDownward sx={{ color: stat.percentColor, fontSize: 18 }} />
                 )}
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  {stat.changeText} {stat.change ? (typeof stat.change === 'number' ? formatVND(stat.change) : stat.change) : ''}
+                  {stat.changeText}{' '}
+                  {/* Chỉ doanh thu mới dùng formatVND cho change, các thành phần khác chỉ hiển thị số */}
+                  {stat.change
+                    ? (stat.title === 'Tổng doanh thu'
+                        ? (typeof stat.change === 'number' ? formatVND(stat.change) : stat.change)
+                        : stat.change.toLocaleString('vi-VN'))
+                    : ''}
                 </Typography>
               </Box>
             </CardContent>
