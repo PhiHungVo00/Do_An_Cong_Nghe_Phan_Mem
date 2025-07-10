@@ -36,6 +36,72 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // Store settings
+  storeName: {
+    type: String,
+    trim: true,
+  },
+  storeAddress: {
+    type: String,
+    trim: true,
+  },
+  storePhone: {
+    type: String,
+    trim: true,
+  },
+  storeEmail: {
+    type: String,
+    trim: true,
+  },
+  storeLogo: {
+    type: String,
+    trim: true,
+  },
+  // Notification settings
+  notifyEmail: {
+    type: Boolean,
+    default: true,
+  },
+  notifyBrowser: {
+    type: Boolean,
+    default: false,
+  },
+  // Security settings
+  enable2FA: {
+    type: Boolean,
+    default: false,
+  },
+  // Theme settings
+  darkMode: {
+    type: Boolean,
+    default: false,
+  },
+  primaryColor: {
+    type: String,
+    default: '#1976d2',
+  },
+  // Preferences
+  language: {
+    type: String,
+    default: 'vi',
+  },
+  timezone: {
+    type: String,
+    default: 'Asia/Ho_Chi_Minh',
+  },
+  // Payment settings
+  bankName: {
+    type: String,
+    trim: true,
+  },
+  bankAccount: {
+    type: String,
+    trim: true,
+  },
+  accountHolder: {
+    type: String,
+    trim: true,
+  },
 }, {
   timestamps: true,
 });

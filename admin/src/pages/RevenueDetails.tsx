@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, Card, Container, Typography, Grid, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Card, Container, Typography, Grid, Paper, CircularProgress, Alert, Button, ButtonGroup } from '@mui/material';
 import { Line } from 'react-chartjs-2';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -22,19 +23,72 @@ ChartJS.register(
   Legend
 );
 
-const RevenueDetails: React.FC = () => {
-  const revenueData = {
-    labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
-    datasets: [
-      {
-        label: 'Doanh thu (triệu VNĐ)',
-        data: [1800, 2200, 1900, 2800, 2000, 2400, 2600, 2300, 2700, 3000, 2800, 3200],
-        borderColor: '#6C63FF',
-        backgroundColor: 'rgba(108, 99, 255, 0.1)',
-        fill: true,
-      }
-    ]
+interface RevenueData {
+  monthlyData: {
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+      backgroundColor: string;
+      fill: boolean;
+    }>;
   };
+  topProducts: Array<{
+    _id: string;
+    totalRevenue: number;
+    totalQuantity: number;
+  }>;
+  stats: {
+    currentMonthRevenue: number;
+    revenueChange: number;
+    orderCount: number;
+    avgOrderValue: number;
+  };
+}
+
+const RevenueDetails: React.FC = () => {
+  const [data, setData] = useState<RevenueData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('year');
+
+  const fetchRevenueData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để xem chi tiết doanh thu');
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:5000/api/analytics/revenue-details?period=${period}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setData(response.data);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể tải dữ liệu doanh thu'}`);
+        }
+      } else {
+        setError('Có lỗi xảy ra khi tải dữ liệu doanh thu');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, [period]);
 
   const options = {
     responsive: true,
@@ -54,24 +108,68 @@ const RevenueDetails: React.FC = () => {
     }
   };
 
-  const topProducts = [
-    { name: 'Sản phẩm A', revenue: 520000000 },
-    { name: 'Sản phẩm B', revenue: 480000000 },
-    { name: 'Sản phẩm C', revenue: 350000000 },
-    { name: 'Sản phẩm D', revenue: 280000000 },
-    { name: 'Sản phẩm E', revenue: 250000000 },
-  ];
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="info">
+          Không có dữ liệu doanh thu
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#1a237e' }}>
-        Chi tiết doanh thu
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
+          Chi tiết doanh thu
+        </Typography>
+        <ButtonGroup variant="outlined" size="small">
+          <Button 
+            variant={period === 'month' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('month')}
+          >
+            Tháng
+          </Button>
+          <Button 
+            variant={period === 'quarter' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('quarter')}
+          >
+            Quý
+          </Button>
+          <Button 
+            variant={period === 'year' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('year')}
+          >
+            Năm
+          </Button>
+        </ButtonGroup>
+      </Box>
       
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Card sx={{ p: 3, borderRadius: 4, boxShadow: 3 }}>
-            <Line options={options} data={revenueData} />
+            <Line options={options} data={data.monthlyData} />
           </Card>
         </Grid>
 
@@ -81,7 +179,7 @@ const RevenueDetails: React.FC = () => {
               Top 5 sản phẩm doanh thu cao nhất
             </Typography>
             <Box sx={{ mt: 2 }}>
-              {topProducts.map((product, index) => (
+              {data.topProducts.map((product, index) => (
                 <Box
                   key={index}
                   sx={{
@@ -89,12 +187,12 @@ const RevenueDetails: React.FC = () => {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     py: 1.5,
-                    borderBottom: index < topProducts.length - 1 ? '1px solid #e0e0e0' : 'none'
+                    borderBottom: index < data.topProducts.length - 1 ? '1px solid #e0e0e0' : 'none'
                   }}
                 >
-                  <Typography variant="body1">{product.name}</Typography>
+                  <Typography variant="body1">{product._id}</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.revenue)}
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.totalRevenue)}
                   </Typography>
                 </Box>
               ))}
@@ -112,25 +210,25 @@ const RevenueDetails: React.FC = () => {
                 <Grid item xs={6}>
                   <Typography variant="subtitle2" color="text.secondary">Doanh thu tháng này</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
-                    3.200.000.000 ₫
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.stats.currentMonthRevenue)}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="subtitle2" color="text.secondary">So với tháng trước</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#4caf50' }}>
-                    +14.3%
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: data.stats.revenueChange >= 0 ? '#4caf50' : '#f44336' }}>
+                    {data.stats.revenueChange >= 0 ? '+' : ''}{data.stats.revenueChange.toFixed(1)}%
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="subtitle2" color="text.secondary">Số đơn hàng</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    428
+                    {data.stats.orderCount}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="subtitle2" color="text.secondary">Giá trị trung bình/đơn</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    7.476.635 ₫
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.stats.avgOrderValue)}
                   </Typography>
                 </Grid>
               </Grid>

@@ -22,8 +22,8 @@ const HelpCenter: React.FC = () => {
             <List>
               <ListItem>
                 <ListItemText
-                  primary="Làm thế nào để thêm sản phẩm mới?"
-                  secondary="Vào mục Sản phẩm, nhấn nút 'Thêm sản phẩm', điền thông tin và lưu lại."
+                          primary="Làm thế nào để nhập sản phẩm mới?"
+        secondary="Vào mục Sản phẩm, nhấn nút 'Nhập sản phẩm mới', điền thông tin và lưu lại."
                 />
               </ListItem>
               <ListItem>

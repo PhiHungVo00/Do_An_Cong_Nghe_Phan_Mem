@@ -51,12 +51,7 @@ import ChallengeCard from '../components/home/ChallengeCard';
 import EventCard from '../components/home/EventCard';
 import { Images } from '../assets/index';
 import { productAPI, salesEventAPI, challengeAPI } from '../services/api';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
-import CloseIcon from '@mui/icons-material/Close';
+
 import Skeleton from '@mui/material/Skeleton';
 
 const StyledCarousel = styled(Carousel)(({ theme }) => ({
@@ -104,14 +99,6 @@ const Home: React.FC = () => {
     const stored = localStorage.getItem('favorites');
     return stored ? JSON.parse(stored) : [];
   });
-  const [addressDetails, setAddressDetails] = useState({
-    streetNumber: '',
-    streetName: '',
-    ward: '',
-    district: '',
-    city: '',
-  });
-  
   // State cho dữ liệu từ API
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [bestSellers, setBestSellers] = useState<any[]>([]);
@@ -119,10 +106,6 @@ const Home: React.FC = () => {
   const [salesEvents, setSalesEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Thêm state cho địa chỉ giao hàng
-  const [openAddressDialog, setOpenAddressDialog] = useState(false);
-  const [tempAddress, setTempAddress] = useState(deliveryAddress);
 
   // Thêm state cho thử thách
   const [challenges, setChallenges] = useState<any[]>([]);
@@ -188,24 +171,10 @@ const Home: React.FC = () => {
     />
   );
 
-  const handleOpenAddressDialog = () => {
-    setTempAddress(deliveryAddress);
-    setOpenAddressDialog(true);
-  };
-  const handleCloseAddressDialog = () => setOpenAddressDialog(false);
-  const handleSaveAddress = () => {
-    const fullAddress = `${addressDetails.streetNumber} ${addressDetails.streetName}, ${addressDetails.ward}, ${addressDetails.district}, ${addressDetails.city}`;
-    setDeliveryAddress(fullAddress);
-    localStorage.setItem('deliveryAddress', fullAddress);
-    setOpenAddressDialog(false);
-    // Reset form
-    setAddressDetails({
-      streetNumber: '',
-      streetName: '',
-      ward: '',
-      district: '',
-      city: '',
-    });
+
+  const handleSaveAddress = (newAddress: string) => {
+    setDeliveryAddress(newAddress);
+    localStorage.setItem('deliveryAddress', newAddress);
   };
 
   // Fetch dữ liệu từ API
@@ -396,94 +365,9 @@ const Home: React.FC = () => {
   return (
     <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Thanh địa chỉ giao hàng */}
-        <DeliveryAddressBar address={deliveryAddress} onChangeAddress={handleOpenAddressDialog} />
+        <DeliveryAddressBar address={deliveryAddress} onChangeAddress={handleSaveAddress} />
 
-        <Dialog open={openAddressDialog} onClose={handleCloseAddressDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            Cập nhật địa chỉ giao hàng
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseAddressDialog}
-              sx={{ position: 'absolute', right: 8, top: 8 }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ mt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Số nhà"
-                    value={addressDetails.streetNumber}
-                    onChange={(e) => setAddressDetails(prev => ({ ...prev, streetNumber: e.target.value }))}
-                    placeholder="Ví dụ: 123"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={8}>
-                  <TextField
-                    fullWidth
-                    label="Tên đường"
-                    value={addressDetails.streetName}
-                    onChange={(e) => setAddressDetails(prev => ({ ...prev, streetName: e.target.value }))}
-                    placeholder="Ví dụ: Đường Nguyễn Văn Linh"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Phường/Xã"
-                    value={addressDetails.ward}
-                    onChange={(e) => setAddressDetails(prev => ({ ...prev, ward: e.target.value }))}
-                    placeholder="Ví dụ: Phường Tân Thuận Tây"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Quận/Huyện"
-                    value={addressDetails.district}
-                    onChange={(e) => setAddressDetails(prev => ({ ...prev, district: e.target.value }))}
-                    placeholder="Ví dụ: Quận 7"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Tỉnh/Thành phố"
-                    value={addressDetails.city}
-                    onChange={(e) => setAddressDetails(prev => ({ ...prev, city: e.target.value }))}
-                    placeholder="Ví dụ: TP. Hồ Chí Minh"
-                  />
-                </Grid>
-              </Grid>
 
-              <Divider sx={{ my: 3 }} />
-
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Hoặc tìm kiếm trên bản đồ:
-              </Typography>
-
-              <TextField
-                fullWidth
-                placeholder="Tìm kiếm địa chỉ trên bản đồ..."
-                value={tempAddress}
-                onChange={(e) => setTempAddress(e.target.value)}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseAddressDialog}>Hủy</Button>
-            <Button 
-              onClick={handleSaveAddress} 
-              variant="contained"
-              disabled={!addressDetails.streetNumber || !addressDetails.streetName || !addressDetails.ward || !addressDetails.district || !addressDetails.city}
-            >
-              Lưu
-            </Button>
-          </DialogActions>
-        </Dialog>
 
       {/* Thanh tìm kiếm */}
       <Container maxWidth="lg" sx={{ my: 2 }}>

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const { auth, adminAuth } = require('../middleware/auth');
+const { updateProductInventory } = require('../services/productUpdateService');
+const { autoAddCustomerFromOrder, updateCustomerFromOrderStatus } = require('../services/customerAutoService');
 
 // User routes (authentication required)
 // Get user's own orders
@@ -48,6 +50,23 @@ router.post('/user', auth, async (req, res) => {
     });
 
     await order.save();
+    
+    // Cập nhật thông tin sản phẩm khi tạo đơn hàng mới
+    try {
+      await updateProductInventory(processedItems, 'Đang xử lý');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật thông tin sản phẩm:', error);
+      // Không throw error để không ảnh hưởng đến việc tạo đơn hàng
+    }
+
+    // Tự động thêm/cập nhật khách hàng khi tạo đơn hàng mới
+    try {
+      await autoAddCustomerFromOrder(order, req.user.email);
+    } catch (error) {
+      console.error('Lỗi khi tự động thêm/cập nhật khách hàng:', error);
+      // Không throw error để không ảnh hưởng đến việc tạo đơn hàng
+    }
+    
     res.status(201).json(order);
   } catch (error) {
     console.error('Error creating user order:', error);
@@ -175,6 +194,26 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
 
     if (!order) {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // Cập nhật thông tin sản phẩm khi trạng thái đơn hàng thay đổi
+    if (status && order.items && order.items.length > 0) {
+      try {
+        await updateProductInventory(order.items, status);
+      } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin sản phẩm:', error);
+        // Không throw error để không ảnh hưởng đến việc cập nhật đơn hàng
+      }
+    }
+
+    // Cập nhật thông tin khách hàng khi trạng thái đơn hàng thay đổi
+    if (status) {
+      try {
+        await updateCustomerFromOrderStatus(orderId, status);
+      } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin khách hàng:', error);
+        // Không throw error để không ảnh hưởng đến việc cập nhật đơn hàng
+      }
     }
 
     res.json(order);

@@ -1,232 +1,209 @@
-# Hệ thống Quản lý Bán hàng
+# 🏪 Hệ Thống Quản Lý Bán Hàng Thông Minh
 
-Ứng dụng web quản lý bán hàng được xây dựng với React.js và Node.js, cung cấp giao diện người dùng hiện đại và các tính năng quản lý toàn diện.
+## 📋 Tổng quan
 
-## Tính năng chính
+Hệ thống quản lý bán hàng toàn diện với 3 thành phần chính:
+- **Backend API** (Node.js + MongoDB)
+- **Frontend User** (React + TypeScript) 
+- **Frontend Admin** (React + TypeScript)
 
-### Quản lý sản phẩm
-- Thêm, sửa, xóa sản phẩm
-- Quản lý kho hàng
-- Theo dõi tồn kho
-- Phân loại sản phẩm
+## 🚀 Tính năng chính
 
-### Quản lý đơn hàng
-- Xử lý đơn hàng
-- Theo dõi trạng thái
-- Lịch sử đơn hàng
-- Báo cáo doanh số
+### 🛍️ Quản lý sản phẩm
+- Danh mục sản phẩm đa dạng
+- Tìm kiếm và lọc sản phẩm
+- Chi tiết sản phẩm với hình ảnh
+- Đánh giá và review
 
-### Quản lý khách hàng
-- Thông tin khách hàng
-- Lịch sử mua hàng
-- Phân loại khách hàng
-- Chăm sóc khách hàng
+### 🛒 Giỏ hàng & Đặt hàng
+- Giỏ hàng thông minh
+- Hệ thống địa chỉ tiên tiến
+- Google Maps integration
+- Theo dõi đơn hàng
 
-### Báo cáo và thống kê
-- Doanh thu theo thời gian
-- Phân tích bán hàng
-- Báo cáo tồn kho
-- Thống kê truy cập
+### 🎯 Khuyến mãi & Sự kiện
+- Live events streaming
+- Challenges và gamification
+- Sales events management
+- Coupon system
 
-## Yêu cầu hệ thống
+### 👥 Quản lý khách hàng
+- Đăng ký/Đăng nhập
+- Profile management
+- Chat support
+- Order history
 
-- Node.js >= 14.0.0
-- MongoDB >= 4.0.0
-- npm hoặc yarn
+### 📊 Dashboard Admin
+- Analytics dashboard
+- Sales reports
+- Customer management
+- Product management
+- Order processing
 
-## Cài đặt và Chạy
-
-### 1. Cài đặt Server (Backend)
-
-```bash
-# Di chuyển vào thư mục server
-cd server
-
-# Cài đặt dependencies
-npm install
-
-# Tạo file .env với nội dung sau
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/sales_management
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:3000,http://localhost:3001
-
-# Seed dữ liệu mẫu
-npm run seed-data
-
-# Khởi động server
-npm run dev
-```
-
-### 2. Cài đặt Ứng dụng người dùng (Frontend - User)
-
-```bash
-# Di chuyển vào thư mục user
-cd user
-
-# Cài đặt dependencies
-npm install
-
-# Tạo file .env (nếu cần)
-REACT_APP_API_URL=http://localhost:5000/api
-
-# Khởi động ứng dụng
-npm start
-```
-
-### 3. Cài đặt Ứng dụng quản trị (Frontend - Admin)
-
-```bash
-# Di chuyển vào thư mục admin
-cd admin
-
-# Cài đặt dependencies
-npm install
-
-# Tạo file .env (nếu cần)
-REACT_APP_API_URL=http://localhost:5000/api
-
-# Khởi động ứng dụng
-npm start
-```
-
-## Tài khoản demo
+## 🏗️ Cấu trúc dự án
 
 ```
-Người dùng Admin:
-Email: admin@example.com
-Mật khẩu: admin123
-
-Người dùng thường:
-Email: user@example.com
-Mật khẩu: user123
-```
-
-⚠️ Lưu ý: Hãy đổi mật khẩu ngay sau khi đăng nhập lần đầu
-
-## API Endpoints
-
-### Public Endpoints (Không cần authentication)
-- `GET /api/products/public` - Lấy danh sách sản phẩm
-- `GET /api/products/public/:id` - Lấy chi tiết sản phẩm
-- `GET /api/products/public/featured` - Lấy sản phẩm nổi bật
-- `GET /api/products/public/categories/all` - Lấy danh mục sản phẩm
-- `GET /api/products/public/brands/all` - Lấy thương hiệu sản phẩm
-- `GET /api/sales-events/public` - Lấy sự kiện bán hàng
-- `POST /api/auth/login` - Đăng nhập
-- `POST /api/auth/register` - Đăng ký
-
-### User Endpoints (Cần authentication)
-- `GET /api/orders/user` - Lấy đơn hàng của user
-- `POST /api/orders/user` - Tạo đơn hàng mới
-- `GET /api/orders/user/:id` - Lấy chi tiết đơn hàng
-- `PUT /api/customers/profile` - Cập nhật thông tin cá nhân
-- `GET /api/customers/profile` - Lấy thông tin cá nhân
-- `POST /api/reviews` - Tạo đánh giá sản phẩm
-- `GET /api/reviews/product/:id` - Lấy đánh giá sản phẩm
-
-### Admin Endpoints (Cần admin authentication)
-- `GET /api/products` - Quản lý sản phẩm
-- `POST /api/products` - Tạo sản phẩm mới
-- `PUT /api/products/:id` - Cập nhật sản phẩm
-- `DELETE /api/products/:id` - Xóa sản phẩm
-- `GET /api/orders` - Quản lý đơn hàng
-- `PUT /api/orders/:id` - Cập nhật đơn hàng
-- `DELETE /api/orders/:id` - Xóa đơn hàng
-- `GET /api/customers` - Quản lý khách hàng
-- `GET /api/employees` - Quản lý nhân viên
-
-## Cấu trúc thư mục
-
-```
-.
-├── server/                  # Server Node.js
+Do_An_Cong_Nghe_Phan_Mem/
+├── server/                 # Backend API
 │   ├── src/
-│   │   ├── models/         # MongoDB models
-│   │   ├── routes/         # API routes
-│   │   ├── middleware/     # Middleware
-│   │   └── scripts/        # Scripts tiện ích
+│   │   ├── models/        # MongoDB models
+│   │   ├── routes/        # API routes
+│   │   ├── middleware/    # Auth middleware
+│   │   └── scripts/       # Database scripts
 │   └── package.json
-│
-├── user/                   # Ứng dụng người dùng React.js
+├── user/                   # Frontend User
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Các trang
-│   │   ├── layouts/        # Layout components
-│   │   ├── services/       # API services
-│   │   ├── contexts/       # React contexts
-│   │   └── utils/          # Utility functions
+│   │   ├── components/    # React components
+│   │   ├── pages/         # Page components
+│   │   ├── contexts/      # React contexts
+│   │   └── services/      # API services
 │   └── package.json
-│
-└── admin/                  # Ứng dụng quản trị React.js
-    ├── src/
-    │   ├── components/     # React components
-    │   ├── pages/          # Các trang
-    │   ├── layouts/        # Layout components
-    │   ├── store/          # Redux store
-    │   └── hooks/          # Custom hooks
-    └── package.json
+├── admin/                  # Frontend Admin
+│   ├── src/
+│   │   ├── components/    # Admin components
+│   │   ├── pages/         # Admin pages
+│   │   └── store/         # Redux store
+│   └── package.json
+├── database/              # Database schema & docs
+├── docs/                  # Documentation
+└── README.md
 ```
 
-## Công nghệ sử dụng
+## 🚀 Khởi động nhanh
 
-### Frontend
-- React.js với TypeScript
-- Material-UI cho giao diện
-- Redux Toolkit cho quản lý state (Admin)
-- React Router cho điều hướng
-- Chart.js cho biểu đồ
+### 1. Cài đặt dependencies
+```bash
+# Backend
+cd server && npm install
+
+# User Frontend
+cd user && npm install
+
+# Admin Frontend
+cd admin && npm install
+```
+
+### 2. Cấu hình môi trường
+```bash
+# Tạo file .env trong thư mục user/
+echo "REACT_APP_GOOGLE_MAPS_API_KEY=your_api_key" > user/.env
+echo "REACT_APP_API_URL=http://localhost:5000/api" >> user/.env
+```
+
+### 3. Khởi động hệ thống
+```bash
+# Chạy script tự động
+START_SYSTEM.bat
+
+# Hoặc chạy thủ công
+cd server && npm run dev
+cd user && npm start
+cd admin && npm start
+```
+
+## 📚 Documentation
+
+### 📖 Hướng dẫn chi tiết
+- [📚 Documentation Index](docs/INDEX.md) - Tổng hợp tất cả documentation
+- [📋 Tổng quan dự án](docs/README.md) - Kiến trúc và API documentation
+- [🗺️ Tính năng địa chỉ](docs/ADDRESS_FEATURE.md) - Hệ thống địa chỉ thông minh
+- [🔧 Cấu hình Google Maps](docs/GOOGLE_MAPS_SETUP.md) - Setup Google Maps API
+- [🧪 Test hệ thống](docs/TEST_ADDRESS_SYSTEM.md) - Hướng dẫn test
+- [🐛 Khắc phục lỗi](docs/GOOGLE_MAPS_TROUBLESHOOTING.md) - Troubleshooting
+
+### 🛠️ API Documentation
+- **Base URL**: `http://localhost:5000/api`
+- **Authentication**: JWT Token
+- **Database**: MongoDB
+
+### 📊 Database Schema
+- Users, Products, Orders, Customers
+- Reviews, Sales Events, Challenges
+- Address system với phân cấp hành chính
+
+## 🎯 Tính năng nổi bật
+
+### 🗺️ Hệ thống địa chỉ tiên tiến
+- ✅ Dữ liệu 63 tỉnh/thành Việt Nam
+- ✅ Cascading dropdown filters
+- ✅ Google Maps integration
+- ✅ GPS location support
+- ✅ Address parsing tự động
+
+### 🎮 Gamification
+- ✅ Challenges và rewards
+- ✅ Live events streaming
+- ✅ Customer engagement
+- ✅ Loyalty programs
+
+### 📱 Responsive Design
+- ✅ Mobile-first approach
+- ✅ Progressive Web App
+- ✅ Cross-platform support
+- ✅ Modern UI/UX
+
+## 🔧 Công nghệ sử dụng
 
 ### Backend
-- Node.js với Express
-- MongoDB với Mongoose
-- JWT cho xác thực
-- Bcrypt cho mã hóa
-- CORS cho cross-origin requests
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: MongoDB
+- **Authentication**: JWT
+- **File Upload**: Multer
 
-## Kết nối API
+### Frontend
+- **Framework**: React 18
+- **Language**: TypeScript
+- **UI Library**: Material-UI
+- **State Management**: Redux Toolkit
+- **Maps**: Google Maps API
 
-### User Frontend
-- Sử dụng `services/api.ts` để kết nối với server
-- Tự động lưu token vào localStorage
-- Hỗ trợ authentication và authorization
-- Real-time updates cho giỏ hàng và đơn hàng
+### Development
+- **Package Manager**: npm
+- **Build Tool**: Create React App
+- **Code Quality**: ESLint, Prettier
+- **Version Control**: Git
 
-### Admin Frontend
-- Sử dụng Redux Toolkit để quản lý state
-- Axios cho HTTP requests
-- Protected routes với authentication
-- Real-time dashboard với charts
+## 🚀 Deployment
 
-## Troubleshooting
-
-### Lỗi kết nối MongoDB
+### Development
 ```bash
-# Kiểm tra MongoDB service
-sudo systemctl status mongod
+# Backend
+cd server && npm run dev
 
-# Khởi động MongoDB
-sudo systemctl start mongod
+# User Frontend
+cd user && npm start
+
+# Admin Frontend  
+cd admin && npm start
 ```
 
-### Lỗi CORS
-- Đảm bảo CORS_ORIGIN trong .env đúng với port frontend
-- Kiểm tra URL API trong frontend
+### Production
+```bash
+# Build frontend
+cd user && npm run build
+cd admin && npm run build
 
-### Lỗi Authentication
-- Kiểm tra JWT_SECRET trong .env
-- Đảm bảo token được gửi đúng format
-- Kiểm tra role của user
+# Deploy backend
+cd server && npm start
+```
 
-## Đóng góp
+## 📞 Support
 
-1. Fork dự án
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit thay đổi (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Tạo Pull Request
+### 🔧 Troubleshooting
+- [Khắc phục lỗi Google Maps](docs/GOOGLE_MAPS_TROUBLESHOOTING.md)
+- [Test hệ thống](docs/TEST_ADDRESS_SYSTEM.md)
+- [Cấu hình môi trường](docs/GOOGLE_MAPS_SETUP.md)
 
-## License
+### 📧 Contact
+- **Email**: support@example.com
+- **Documentation**: [docs/](docs/)
+- **Issues**: GitHub Issues
 
-MIT License - xem [LICENSE](LICENSE) để biết thêm chi tiết 
+## 📄 License
+
+MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
+
+---
+
+**Made with ❤️ by Development Team** 

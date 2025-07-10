@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, Card, Container, Typography, Grid, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Card, Container, Typography, Grid, Paper, CircularProgress, Alert } from '@mui/material';
 import { Line, Bar } from 'react-chartjs-2';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,34 +25,76 @@ ChartJS.register(
   Legend
 );
 
+interface AccessData {
+  dailyAccessData: {
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+      backgroundColor: string;
+      fill: boolean;
+    }>;
+  };
+  deviceAccessData: {
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      backgroundColor: string[];
+    }>;
+  };
+  accessStats: Array<{
+    label: string;
+    value: string;
+  }>;
+  pageStats: Array<{
+    page: string;
+    views: number;
+  }>;
+}
+
 const AccessDetails: React.FC = () => {
-  const dailyAccessData = {
-    labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'],
-    datasets: [
-      {
-        label: 'Lượt truy cập',
-        data: [45, 52, 38, 41, 56, 48, 54, 42, 47, 38, 42, 44, 46, 49, 53],
-        borderColor: '#6C63FF',
-        backgroundColor: 'rgba(108, 99, 255, 0.1)',
-        fill: true,
+  const [data, setData] = useState<AccessData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAccessData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để xem chi tiết truy cập');
+        return;
       }
-    ]
+
+      const response = await axios.get('http://localhost:5000/api/analytics/access-details', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setData(response.data);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể tải dữ liệu truy cập'}`);
+        }
+      } else {
+        setError('Có lỗi xảy ra khi tải dữ liệu truy cập');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deviceAccessData = {
-    labels: ['Desktop', 'Mobile', 'Tablet'],
-    datasets: [
-      {
-        label: 'Lượt truy cập theo thiết bị',
-        data: [320, 250, 41],
-        backgroundColor: [
-          'rgba(108, 99, 255, 0.8)',
-          'rgba(75, 192, 192, 0.8)',
-          'rgba(255, 159, 64, 0.8)',
-        ],
-      }
-    ]
-  };
+  useEffect(() => {
+    fetchAccessData();
+  }, []);
 
   const lineOptions = {
     responsive: true,
@@ -84,20 +127,35 @@ const AccessDetails: React.FC = () => {
     }
   };
 
-  const accessStats = [
-    { label: 'Tổng lượt truy cập', value: '611' },
-    { label: 'Trung bình/ngày', value: '45' },
-    { label: 'Thời gian TB/phiên', value: '5m 32s' },
-    { label: 'Tỷ lệ thoát', value: '35.8%' },
-  ];
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
-  const pageStats = [
-    { page: 'Trang chủ', views: 245 },
-    { page: 'Sản phẩm', views: 189 },
-    { page: 'Giỏ hàng', views: 132 },
-    { page: 'Thanh toán', views: 98 },
-    { page: 'Tài khoản', views: 76 },
-  ];
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="info">
+          Không có dữ liệu truy cập
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -108,7 +166,7 @@ const AccessDetails: React.FC = () => {
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Card sx={{ p: 3, borderRadius: 4, boxShadow: 3 }}>
-            <Line options={lineOptions} data={dailyAccessData} />
+            <Line options={lineOptions} data={data.dailyAccessData} />
           </Card>
         </Grid>
 
@@ -118,7 +176,7 @@ const AccessDetails: React.FC = () => {
               Thống kê truy cập
             </Typography>
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              {accessStats.map((stat, index) => (
+              {data.accessStats.map((stat, index) => (
                 <Grid item xs={6} key={index}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary">
@@ -136,7 +194,7 @@ const AccessDetails: React.FC = () => {
 
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 4, boxShadow: 3 }}>
-            <Bar options={barOptions} data={deviceAccessData} />
+            <Bar options={barOptions} data={data.deviceAccessData} />
           </Paper>
         </Grid>
 
@@ -146,7 +204,7 @@ const AccessDetails: React.FC = () => {
               Trang được xem nhiều nhất
             </Typography>
             <Box sx={{ mt: 2 }}>
-              {pageStats.map((stat, index) => (
+              {data.pageStats.map((stat, index) => (
                 <Box
                   key={index}
                   sx={{
@@ -154,7 +212,7 @@ const AccessDetails: React.FC = () => {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     py: 1.5,
-                    borderBottom: index < pageStats.length - 1 ? '1px solid #e0e0e0' : 'none'
+                    borderBottom: index < data.pageStats.length - 1 ? '1px solid #e0e0e0' : 'none'
                   }}
                 >
                   <Typography variant="body1">{stat.page}</Typography>

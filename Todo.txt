@@ -1,0 +1,9 @@
+Sửa lại phần nhập địa chỉ thành lựa chọn thay vì là nhập (Xong)
+Thêm phần nhập hàng, cập nhật tự động số lượng hàng khi có người mua (Xong)
+Lưu thông tin khách hàng khi có ngươi mua (Xong)
+Sửa lại phần biểu đồ sau cho không còn là giả nữa (Xong)
+Hoàn thành phần setting  (Xong)
+Sửa lại email xác thực khi đăng kí
+Sửa lại lỗi không hiển thị thông tin người dùng (Xong)
+Sửa lại một số chỗ giao diện cho đẹp hơn (Xong)
+Thêm phần shipper, cập nhật trạng thái đơn hàng khi giao hoàn thành 

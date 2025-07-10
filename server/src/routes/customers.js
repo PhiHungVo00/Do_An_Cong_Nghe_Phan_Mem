@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
+const { 
+  getCustomerStats, 
+  getVIPCustomers, 
+  getNewCustomers, 
+  getInactiveCustomers 
+} = require('../services/customerAutoService');
 
 // Get all customers with pagination
 router.get('/', auth, async (req, res) => {
@@ -104,6 +110,53 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// Get customer statistics (admin only)
+router.get('/stats', auth, adminAuth, async (req, res) => {
+  try {
+    const stats = await getCustomerStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching customer stats:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thống kê khách hàng' });
+  }
+});
+
+// Get VIP customers (admin only)
+router.get('/vip', auth, adminAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const vipCustomers = await getVIPCustomers(limit);
+    res.json(vipCustomers);
+  } catch (error) {
+    console.error('Error fetching VIP customers:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách khách hàng VIP' });
+  }
+});
+
+// Get new customers (admin only)
+router.get('/new', auth, adminAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const newCustomers = await getNewCustomers(limit);
+    res.json(newCustomers);
+  } catch (error) {
+    console.error('Error fetching new customers:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách khách hàng mới' });
+  }
+});
+
+// Get inactive customers (admin only)
+router.get('/inactive', auth, adminAuth, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 30;
+    const inactiveCustomers = await getInactiveCustomers(days);
+    res.json(inactiveCustomers);
+  } catch (error) {
+    console.error('Error fetching inactive customers:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách khách hàng không hoạt động' });
+  }
+});
+
 // Clear all customers
 router.delete('/clear-all', auth, async (req, res) => {
   try {
@@ -115,6 +168,31 @@ router.delete('/clear-all', auth, async (req, res) => {
   } catch (error) {
     console.error('Error clearing customers:', error);
     res.status(500).json({ message: 'Lỗi server khi xóa tất cả khách hàng' });
+  }
+});
+
+// Get current user's customer profile
+router.get('/profile', auth, async (req, res) => {
+  try {
+    // Tìm theo userId nếu có, hoặc theo email
+    let customer = await Customer.findOne({ userId: req.user.id });
+    if (!customer && req.user.email) {
+      customer = await Customer.findOne({ email: req.user.email });
+    }
+    if (!customer) {
+      // Nếu chưa có profile, trả về thông tin cơ bản từ user
+      return res.json({
+        name: req.user.fullName || req.user.username || '',
+        email: req.user.email || '',
+        phone: req.user.phone || '',
+        address: '',
+        isGuest: true
+      });
+    }
+    res.json(customer);
+  } catch (error) {
+    console.error('Error fetching customer profile:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thông tin khách hàng' });
   }
 });
 

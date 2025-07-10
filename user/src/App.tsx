@@ -17,6 +17,7 @@ import Register from './pages/auth/Register';
 import ShopReview from './pages/ShopReview';
 import Chat from './pages/Chat';
 import { CartProvider } from './contexts/CartContext';
+import { GoogleMapsProvider } from './components/GoogleMapsProvider';
 
 // Cấu hình future flags cho React Router
 const router = {
@@ -28,43 +29,45 @@ const router = {
 
 const App: React.FC = () => {
   return (
-    <CartProvider>
-      <SnackbarProvider
-        maxSnack={3}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        autoHideDuration={3000}
-      >
-        <Router>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-              <NavBar />
-              <Box component="main" sx={{ flexGrow: 1 }}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/challenges" element={<Challenges />} />
-                  <Route path="/events" element={<LiveEvents />} />
-                  <Route path="/products" element={<Products />} />
-                  <Route path="/products/:categoryId" element={<Products />} />
-                  <Route path="/order-history" element={<OrderHistory />} />
-                  <Route path="/shop-review" element={<ShopReview />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+    <GoogleMapsProvider>
+      <CartProvider>
+        <SnackbarProvider
+          maxSnack={3}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          autoHideDuration={3000}
+        >
+          <Router>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+                <NavBar />
+                <Box component="main" sx={{ flexGrow: 1 }}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/challenges" element={<Challenges />} />
+                    <Route path="/events" element={<LiveEvents />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/products/:categoryId" element={<Products />} />
+                    <Route path="/order-history" element={<OrderHistory />} />
+                    <Route path="/shop-review" element={<ShopReview />} />
+                    <Route path="/chat" element={<Chat />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Box>
               </Box>
-            </Box>
-          </ThemeProvider>
-        </Router>
-      </SnackbarProvider>
-    </CartProvider>
+            </ThemeProvider>
+          </Router>
+        </SnackbarProvider>
+      </CartProvider>
+    </GoogleMapsProvider>
   );
 };
 

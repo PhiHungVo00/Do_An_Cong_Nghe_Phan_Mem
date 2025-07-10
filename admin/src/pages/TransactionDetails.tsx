@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -13,8 +13,13 @@ import {
   TableHead,
   TableRow,
   Chip,
+  CircularProgress,
+  Alert,
+  Button,
+  ButtonGroup,
 } from '@mui/material';
 import { Line } from 'react-chartjs-2';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -36,19 +41,78 @@ ChartJS.register(
   Legend
 );
 
-const TransactionDetails: React.FC = () => {
-  const transactionData = {
-    labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'],
-    datasets: [
-      {
-        label: 'Số giao dịch',
-        data: [12, 15, 10, 14, 16, 13, 18, 11, 15, 12, 14, 16, 13, 17, 15],
-        borderColor: '#6C63FF',
-        backgroundColor: 'rgba(108, 99, 255, 0.1)',
-        fill: true,
-      }
-    ]
+interface TransactionData {
+  transactionData: {
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+      backgroundColor: string;
+      fill: boolean;
+    }>;
   };
+  recentTransactions: Array<{
+    _id: string;
+    orderNumber: string;
+    date: string;
+    customer: string;
+    totalAmount: number;
+    status: string;
+    items: Array<{
+      productName: string;
+      quantity: number;
+      price: number;
+    }>;
+  }>;
+  stats: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
+const TransactionDetails: React.FC = () => {
+  const [data, setData] = useState<TransactionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
+
+  const fetchTransactionData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để xem chi tiết giao dịch');
+        return;
+      }
+
+      const response = await axios.get(`http://localhost:5000/api/analytics/transaction-details?period=${period}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setData(response.data);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể tải dữ liệu giao dịch'}`);
+        }
+      } else {
+        setError('Có lỗi xảy ra khi tải dữ liệu giao dịch');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactionData();
+  }, [period]);
 
   const options = {
     responsive: true,
@@ -68,77 +132,80 @@ const TransactionDetails: React.FC = () => {
     }
   };
 
-  const transactions = [
-    {
-      id: 'TX001',
-      date: '2024-03-15',
-      customer: 'Nguyễn Văn A',
-      amount: 2500000,
-      status: 'completed',
-      items: 3,
-    },
-    {
-      id: 'TX002',
-      date: '2024-03-15',
-      customer: 'Trần Thị B',
-      amount: 1800000,
-      status: 'completed',
-      items: 2,
-    },
-    {
-      id: 'TX003',
-      date: '2024-03-15',
-      customer: 'Lê Văn C',
-      amount: 3200000,
-      status: 'pending',
-      items: 4,
-    },
-    {
-      id: 'TX004',
-      date: '2024-03-14',
-      customer: 'Phạm Thị D',
-      amount: 950000,
-      status: 'completed',
-      items: 1,
-    },
-    {
-      id: 'TX005',
-      date: '2024-03-14',
-      customer: 'Hoàng Văn E',
-      amount: 4200000,
-      status: 'cancelled',
-      items: 5,
-    },
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'Đã giao hàng':
+      case 'Đã hoàn thành':
         return { color: '#4caf50', label: 'Hoàn thành' };
-      case 'pending':
+      case 'Đang xử lý':
         return { color: '#ff9800', label: 'Đang xử lý' };
-      case 'cancelled':
+      case 'Đã hủy':
         return { color: '#f44336', label: 'Đã hủy' };
       default:
         return { color: '#9e9e9e', label: 'Không xác định' };
     }
   };
 
-  const stats = [
-    { label: 'Tổng giao dịch', value: '428' },
-    { label: 'Giao dịch thành công', value: '389' },
-    { label: 'Đang xử lý', value: '28' },
-    { label: 'Đã hủy', value: '11' },
-  ];
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="info">
+          Không có dữ liệu giao dịch
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#1a237e' }}>
-        Chi tiết giao dịch
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
+          Chi tiết giao dịch
+        </Typography>
+        <ButtonGroup variant="outlined" size="small">
+          <Button 
+            variant={period === 'week' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('week')}
+          >
+            Tuần
+          </Button>
+          <Button 
+            variant={period === 'month' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('month')}
+          >
+            Tháng
+          </Button>
+          <Button 
+            variant={period === 'year' ? 'contained' : 'outlined'}
+            onClick={() => setPeriod('year')}
+          >
+            Năm
+          </Button>
+        </ButtonGroup>
+      </Box>
       
       <Grid container spacing={3}>
-        {stats.map((stat, index) => (
+        {data.stats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Paper sx={{ p: 3, borderRadius: 4, boxShadow: 3 }}>
               <Typography variant="subtitle2" color="text.secondary">
@@ -153,7 +220,7 @@ const TransactionDetails: React.FC = () => {
 
         <Grid item xs={12}>
           <Card sx={{ p: 3, borderRadius: 4, boxShadow: 3 }}>
-            <Line options={options} data={transactionData} />
+            <Line options={options} data={data.transactionData} />
           </Card>
         </Grid>
 
@@ -175,14 +242,14 @@ const TransactionDetails: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{transaction.id}</TableCell>
-                      <TableCell>{transaction.date}</TableCell>
+                  {data.recentTransactions.map((transaction) => (
+                    <TableRow key={transaction._id}>
+                      <TableCell>{transaction.orderNumber}</TableCell>
+                      <TableCell>{new Date(transaction.date).toLocaleDateString('vi-VN')}</TableCell>
                       <TableCell>{transaction.customer}</TableCell>
-                      <TableCell align="right">{transaction.items}</TableCell>
+                      <TableCell align="right">{transaction.items.length}</TableCell>
                       <TableCell align="right">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount)}
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.totalAmount)}
                       </TableCell>
                       <TableCell>
                         <Chip

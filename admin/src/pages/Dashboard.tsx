@@ -4,8 +4,10 @@ import DashboardHeader from '../components/DashboardHeader';
 import StatsCards from '../components/StatsCards';
 import SalesAnalytics from '../components/SalesAnalytics';
 import TrafficChart from '../components/TrafficChart';
-import TopSellingTable from '../components/TopSellingTable';
+import TopSellingProducts from '../components/TopSellingProducts';
 import ProductSales from '../components/ProductSales';
+import InventoryStats from '../components/InventoryStats';
+import CustomerStats from '../components/CustomerStats';
 
 const Dashboard: React.FC = () => {
   return (
@@ -25,12 +27,18 @@ const Dashboard: React.FC = () => {
         </Grid>
         <Grid container spacing={3} sx={{ mt: { xs: 1, md: 2 } }}>
           <Grid item xs={12} md={8}>
-            <TopSellingTable />
+            <TopSellingProducts />
           </Grid>
           <Grid item xs={12} md={4}>
             <ProductSales />
           </Grid>
         </Grid>
+        <Box sx={{ mt: { xs: 1, md: 2 } }}>
+          <InventoryStats />
+        </Box>
+        <Box sx={{ mt: { xs: 1, md: 2 } }}>
+          <CustomerStats />
+        </Box>
       </Box>
     </Box>
   );

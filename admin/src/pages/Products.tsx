@@ -246,7 +246,20 @@ const Products: React.FC = () => {
         return params.value ? `${params.value}%` : '-';
       },
     },
-    { field: 'stock', headerName: 'Tồn kho', width: 100 },
+    { 
+      field: 'stock', 
+      headerName: 'Tồn kho', 
+      width: 100,
+      renderCell: (params) => (
+        <Box sx={{ 
+          color: params.value === 0 ? 'error.main' : 
+                 params.value <= 5 ? 'warning.main' : 'success.main',
+          fontWeight: 'bold'
+        }}>
+          {params.value}
+        </Box>
+      ),
+    },
     { field: 'soldCount', headerName: 'Đã bán', width: 100 },
     { field: 'category', headerName: 'Danh mục', width: 150 },
     { field: 'brand', headerName: 'Thương hiệu', width: 120 },
@@ -545,7 +558,7 @@ const Products: React.FC = () => {
       if (selectedProduct) {
         alert('Cập nhật sản phẩm thành công!');
       } else {
-        alert('Thêm sản phẩm thành công!');
+        alert('Nhập sản phẩm mới thành công!');
       }
     } catch (err) {
       console.error('Error details:', err);
@@ -686,7 +699,7 @@ const Products: React.FC = () => {
             Xóa tất cả sản phẩm
           </Button>
           <Button variant="contained" onClick={handleAdd}>
-            Thêm sản phẩm
+            Nhập sản phẩm mới
           </Button>
         </Box>
       </Box>
@@ -723,7 +736,7 @@ const Products: React.FC = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm'}
+          {selectedProduct ? 'Chỉnh sửa sản phẩm' : 'Nhập sản phẩm mới'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>

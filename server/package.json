@@ -9,9 +9,15 @@
     "create-admin": "node src/scripts/createAdmin.js",
     "seed-data": "node src/scripts/seedData.js",
     "seed-admin-data": "node src/scripts/seedAdminData.js",
+    "seed-address-data": "node src/scripts/seedAddressData.js",
+    "seed-full-address-data": "node src/scripts/seedFullAddressData.js",
+    "test-inventory": "node src/scripts/testInventoryUpdate.js",
+    "test-customer-auto": "node src/scripts/testCustomerAuto.js",
+    "test-analytics": "node src/scripts/testAnalytics.js",
     "check-users": "node src/scripts/checkUsers.js"
   },
   "dependencies": {
+    "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",

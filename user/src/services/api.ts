@@ -266,4 +266,37 @@ export const challengeAPI = {
     const response = await fetch(`${API_BASE_URL}/challenges/public`);
     return handleResponse(response);
   },
+};
+
+// Address API
+export const addressAPI = {
+  // Get provinces
+  getProvinces: async () => {
+    const response = await fetch(`${API_BASE_URL}/addresses/provinces`);
+    return handleResponse(response);
+  },
+
+  // Get districts by province
+  getDistricts: async (provinceCode: string) => {
+    const response = await fetch(`${API_BASE_URL}/addresses/districts/${provinceCode}`);
+    return handleResponse(response);
+  },
+
+  // Get wards by district
+  getWards: async (districtCode: string) => {
+    const response = await fetch(`${API_BASE_URL}/addresses/wards/${districtCode}`);
+    return handleResponse(response);
+  },
+
+  // Search addresses
+  search: async (query: string) => {
+    const response = await fetch(`${API_BASE_URL}/addresses/search?q=${encodeURIComponent(query)}`);
+    return handleResponse(response);
+  },
+
+  // Get address by code
+  getByCode: async (code: string) => {
+    const response = await fetch(`${API_BASE_URL}/addresses/${code}`);
+    return handleResponse(response);
+  },
 }; 

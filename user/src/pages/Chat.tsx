@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Box, Container, Typography, TextField, Button, Paper, List, ListItem, ListItemText, Avatar, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, TextField, Button, Paper, List, ListItem, ListItemText, Avatar, CircularProgress, InputAdornment, IconButton, Fade } from '@mui/material';
+import { Send as SendIcon } from '@mui/icons-material';
 import { messageAPI, authAPI } from '../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -24,9 +25,7 @@ const Chat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Lấy thông tin user hiện tại
     authAPI.getCurrentUser().then(setUser).catch(() => setUser(null));
-    // Lấy adminId thật từ backend
     fetch(`${API_BASE_URL}/auth/admin`)
       .then(async res => {
         if (!res.ok) throw new Error('Không tìm thấy admin');
@@ -37,12 +36,10 @@ const Chat: React.FC = () => {
           setAdminId(null);
           setError('Không tìm thấy admin hợp lệ. Vui lòng liên hệ quản trị viên.');
         }
-        console.log('adminId:', data._id);
       })
       .catch((err) => {
         setAdminId(null);
         setError('Không tìm thấy admin hoặc lỗi hệ thống.');
-        console.error('Lỗi lấy adminId:', err);
       });
   }, []);
 
@@ -70,7 +67,6 @@ const Chat: React.FC = () => {
     try {
       await messageAPI.sendMessage(adminId, input);
       setInput('');
-      // Reload messages
       const res = await messageAPI.getMessages(adminId);
       setMessages(res.messages || []);
     } catch (err: any) {
@@ -82,28 +78,66 @@ const Chat: React.FC = () => {
 
   return (
     <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Paper sx={{ p: 2, minHeight: 500, display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>Chat với Admin</Typography>
-        <Box sx={{ flex: 1, overflowY: 'auto', mb: 2, bgcolor: '#f9f9f9', borderRadius: 2, p: 2 }}>
+      <Paper sx={{ p: 2, minHeight: 500, display: 'flex', flexDirection: 'column', borderRadius: 4, boxShadow: 6, bgcolor: '#f4f6fb' }}>
+        <Typography variant="h5" fontWeight={700} gutterBottom align="center" sx={{ letterSpacing: 1, color: 'primary.main' }}>
+          Chat với Admin
+        </Typography>
+        <Box sx={{ flex: 1, overflowY: 'auto', mb: 2, bgcolor: '#e9eaf3', borderRadius: 3, p: 2, boxShadow: 1 }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
           ) : (
-            <List>
-              {messages.map((msg) => (
-                <ListItem key={msg._id} sx={{ justifyContent: msg.from === user?._id ? 'flex-end' : 'flex-start' }}>
-                  {msg.from !== user?._id && <Avatar sx={{ mr: 1, width: 32, height: 32 }}>A</Avatar>}
-                  <Paper sx={{ p: 1.5, bgcolor: msg.from === user?._id ? 'primary.light' : 'grey.100', color: 'text.primary', borderRadius: 2, maxWidth: 320 }}>
-                    <ListItemText primary={msg.content} secondary={new Date(msg.createdAt).toLocaleTimeString('vi-VN')} />
-                  </Paper>
-                  {msg.from === user?._id && <Avatar sx={{ ml: 1, width: 32, height: 32 }}>T</Avatar>}
-                </ListItem>
-              ))}
+            <List sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {messages.map((msg, idx) => {
+                const isUser = msg.from === user?._id;
+                return (
+                  <Fade in key={msg._id || idx} timeout={400}>
+                    <ListItem
+                      sx={{
+                        justifyContent: isUser ? 'flex-end' : 'flex-start',
+                        alignItems: 'flex-end',
+                        border: 'none',
+                        bgcolor: 'transparent',
+                        px: 0,
+                      }}
+                      disableGutters
+                    >
+                      {!isUser && (
+                        <Avatar sx={{ mr: 1, width: 36, height: 36, bgcolor: '#6C63FF', fontWeight: 700 }}>A</Avatar>
+                      )}
+                      <Paper
+                        elevation={isUser ? 3 : 1}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: isUser ? 'primary.main' : '#fff',
+                          color: isUser ? '#fff' : 'text.primary',
+                          borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                          maxWidth: 320,
+                          minWidth: 60,
+                          boxShadow: isUser ? '0 2px 12px 0 rgba(108,99,255,0.10)' : '0 1px 4px 0 rgba(0,0,0,0.04)',
+                          position: 'relative',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Typography variant="body1" sx={{ wordBreak: 'break-word', fontSize: 15, fontWeight: 500 }}>{msg.content}</Typography>
+                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: isUser ? 'rgba(255,255,255,0.7)' : 'grey.600', textAlign: isUser ? 'right' : 'left' }}>
+                          {isUser ? (user?.fullName || 'Bạn') : 'Admin'} • {new Date(msg.createdAt).toLocaleTimeString('vi-VN')}
+                        </Typography>
+                      </Paper>
+                      {isUser && (
+                        <Avatar sx={{ ml: 1, width: 36, height: 36, bgcolor: '#FFD600', color: '#6C63FF', fontWeight: 700 }}>
+                          {user?.fullName?.[0] || 'T'}
+                        </Avatar>
+                      )}
+                    </ListItem>
+                  </Fade>
+                );
+              })}
               <div ref={messagesEndRef} />
             </List>
           )}
         </Box>
         {error && <Typography color="error" sx={{ mb: 1 }}>{error}</Typography>}
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
           <TextField
             fullWidth
             placeholder="Nhập tin nhắn..."
@@ -111,10 +145,17 @@ const Chat: React.FC = () => {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
             disabled={sending}
+            sx={{ bgcolor: '#fff', borderRadius: 2, boxShadow: 1 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton color="primary" onClick={handleSend} disabled={sending || !input.trim() || !adminId}>
+                    <SendIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
-          <Button variant="contained" onClick={handleSend} disabled={sending || !input.trim() || !adminId}>
-            Gửi
-          </Button>
         </Box>
         {!adminId && (
           <Typography color="error" sx={{ mt: 2 }}>

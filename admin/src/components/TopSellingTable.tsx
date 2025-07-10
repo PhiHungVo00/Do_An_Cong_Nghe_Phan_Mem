@@ -1,51 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, Box, Select, MenuItem, InputLabel, FormControl, TextField, Stack, Button, Snackbar
+  Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Avatar, Box, Select, MenuItem, InputLabel, FormControl, TextField, Stack, Button, Snackbar, CircularProgress, Alert
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import DownloadIcon from '@mui/icons-material/Download';
+import axios from 'axios';
 
-const allProducts = [
-  { name: 'Nồi cơm điện', price: 120, sold: 320, earning: 38400, img: 'https://cdn.tgdd.vn/Products/Images/1979/238857/noi-com-dien-1-2l-sharp-ksh-d12v-ava-600x600.jpg', date: '2024-06-01', status: 'In Stock' },
-  { name: 'Máy xay sinh tố', price: 80, sold: 210, earning: 16800, img: 'https://cdn.tgdd.vn/Products/Images/1943/238857/may-xay-sinh-to-ava-600x600.jpg', date: '2024-06-03', status: 'In Stock' },
-  { name: 'Quạt điện', price: 60, sold: 150, earning: 9000, img: 'https://cdn.tgdd.vn/Products/Images/2162/238857/quat-dien-ava-600x600.jpg', date: '2024-06-05', status: 'Out of Stock' },
-  { name: 'Bàn ủi hơi nước', price: 95, sold: 180, earning: 17100, img: 'https://cdn.tgdd.vn/Products/Images/1944/238857/ban-ui-hoi-nuoc-ava-600x600.jpg', date: '2024-06-07', status: 'In Stock' },
-  { name: 'Máy lọc không khí', price: 250, sold: 90, earning: 22500, img: 'https://cdn.tgdd.vn/Products/Images/2002/238857/may-loc-khong-khi-ava-600x600.jpg', date: '2024-06-10', status: 'In Stock' },
-  { name: 'Nồi chiên không dầu', price: 180, sold: 140, earning: 25200, img: 'https://cdn.tgdd.vn/Products/Images/1979/238857/noi-chien-khong-dau-ava-600x600.jpg', date: '2024-06-12', status: 'In Stock' },
-  { name: 'Máy hút bụi', price: 200, sold: 110, earning: 22000, img: 'https://cdn.tgdd.vn/Products/Images/2003/238857/may-hut-bui-ava-600x600.jpg', date: '2024-06-15', status: 'Out of Stock' },
-  { name: 'Ấm siêu tốc', price: 45, sold: 300, earning: 13500, img: 'https://cdn.tgdd.vn/Products/Images/1979/238857/am-sieu-toc-ava-600x600.jpg', date: '2024-06-18', status: 'In Stock' },
-  { name: 'Máy sấy tóc', price: 55, sold: 170, earning: 9350, img: 'https://cdn.tgdd.vn/Products/Images/2004/238857/may-say-toc-ava-600x600.jpg', date: '2024-06-20', status: 'In Stock' },
-  { name: 'Bếp hồng ngoại', price: 160, sold: 75, earning: 12000, img: 'https://cdn.tgdd.vn/Products/Images/1979/238857/bep-hong-ngoai-ava-600x600.jpg', date: '2024-06-22', status: 'In Stock' },
-];
+interface TopSellingProduct {
+  _id: string;
+  name: string;
+  price: number;
+  soldCount: number;
+  revenue: number;
+  image: string;
+  status: string;
+  lastSoldDate: string;
+}
 
 function formatVND(value: number) {
   return value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 }
 
 const TopSellingTable: React.FC = () => {
+  const [products, setProducts] = useState<TopSellingProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filteredProducts, setFilteredProducts] = useState<TopSellingProduct[]>([]);
   const [date, setDate] = useState('');
   const [price, setPrice] = useState('');
   const [sold, setSold] = useState('');
-  const [products, setProducts] = useState(allProducts);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const fetchTopSellingProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Vui lòng đăng nhập để xem sản phẩm bán chạy');
+        return;
+      }
+
+      const response = await axios.get('http://localhost:5000/api/analytics/top-selling-products', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setProducts(response.data);
+      setFilteredProducts(response.data);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          setError(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể tải dữ liệu sản phẩm bán chạy'}`);
+        }
+      } else {
+        setError('Có lỗi xảy ra khi tải dữ liệu sản phẩm bán chạy');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopSellingProducts();
+  }, []);
 
   // Filter logic
   const handleFilter = () => {
-    let filtered = allProducts;
-    if (date) filtered = filtered.filter(p => p.date === date);
+    let filtered = products;
+    if (date) filtered = filtered.filter(p => p.lastSoldDate === date);
     if (price) filtered = filtered.filter(p => p.price >= Number(price));
-    if (sold) filtered = filtered.filter(p => p.sold >= Number(sold));
-    setProducts(filtered);
+    if (sold) filtered = filtered.filter(p => p.soldCount >= Number(sold));
+    setFilteredProducts(filtered);
   };
+
   const handleReset = () => {
-    setDate(''); setPrice(''); setSold(''); setProducts(allProducts);
+    setDate('');
+    setPrice('');
+    setSold('');
+    setFilteredProducts(products);
   };
+
   const handleExport = () => {
     setSnackbarOpen(true);
   };
+
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
+
+  const getImageUrl = (imagePath: string) => {
+    if (!imagePath) return '/placeholder-product.jpg';
+    return `http://localhost:5000/assets/products/${imagePath}`;
+  };
+
+  if (loading) {
+    return (
+      <Card sx={{ borderRadius: 4, boxShadow: 2, mb: 3, p: 0, bgcolor: '#fff' }}>
+        <CardContent sx={{ pb: '20px!important', pt: 3, px: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+            <CircularProgress />
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
 
   return (
     <Card sx={{ borderRadius: 4, boxShadow: 2, mb: 3, p: 0, bgcolor: '#fff' }}>
@@ -56,16 +127,39 @@ const TopSellingTable: React.FC = () => {
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <TextField type="date" label="Ngày bán" value={date} onChange={e => setDate(e.target.value)} size="small" InputLabelProps={{ shrink: true }} />
+              <TextField 
+                type="date" 
+                label="Ngày bán" 
+                value={date} 
+                onChange={e => setDate(e.target.value)} 
+                size="small" 
+                InputLabelProps={{ shrink: true }} 
+              />
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <TextField type="number" label="Giá tối thiểu" value={price} onChange={e => setPrice(e.target.value)} size="small" />
+              <TextField 
+                type="number" 
+                label="Giá tối thiểu" 
+                value={price} 
+                onChange={e => setPrice(e.target.value)} 
+                size="small" 
+              />
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <TextField type="number" label="Đã bán tối thiểu" value={sold} onChange={e => setSold(e.target.value)} size="small" />
+              <TextField 
+                type="number" 
+                label="Đã bán tối thiểu" 
+                value={sold} 
+                onChange={e => setSold(e.target.value)} 
+                size="small" 
+              />
             </FormControl>
-            <Button variant="contained" color="primary" size="small" startIcon={<FilterListIcon />} onClick={handleFilter}>Lọc</Button>
-            <Button variant="text" size="small" onClick={handleReset}>Đặt lại</Button>
+            <Button variant="contained" color="primary" size="small" startIcon={<FilterListIcon />} onClick={handleFilter}>
+              Lọc
+            </Button>
+            <Button variant="text" size="small" onClick={handleReset}>
+              Đặt lại
+            </Button>
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
@@ -109,30 +203,57 @@ const TopSellingTable: React.FC = () => {
                 <TableCell>Giá</TableCell>
                 <TableCell>Đã bán</TableCell>
                 <TableCell>Doanh thu</TableCell>
-                <TableCell>Ngày bán</TableCell>
+                <TableCell>Ngày bán gần nhất</TableCell>
                 <TableCell>Trạng thái</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {products.map((p, idx) => (
-                <TableRow key={idx} hover>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar src={p.img} alt={p.name} sx={{ width: 32, height: 32, mr: 1 }} />
-                      <Typography fontWeight={600}>{p.name}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{formatVND(p.price)}</TableCell>
-                  <TableCell>{p.sold}</TableCell>
-                  <TableCell>{formatVND(p.earning)}</TableCell>
-                  <TableCell>{p.date}</TableCell>
-                  <TableCell>
-                    <Box sx={{ color: p.status === 'In Stock' ? 'success.main' : 'error.main', fontWeight: 600 }}>
-                      {p.status === 'In Stock' ? 'Còn hàng' : 'Hết hàng'}
-                    </Box>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <TableRow key={product._id} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar 
+                          src={getImageUrl(product.image)} 
+                          alt={product.name} 
+                          sx={{ 
+                            width: 40, 
+                            height: 40, 
+                            mr: 1,
+                            border: '2px solid #f0f0f0'
+                          }} 
+                        />
+                        <Typography fontWeight={600} sx={{ fontSize: 14 }}>
+                          {product.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{formatVND(product.price)}</TableCell>
+                    <TableCell>{product.soldCount}</TableCell>
+                    <TableCell>{formatVND(product.revenue)}</TableCell>
+                    <TableCell>
+                      {product.lastSoldDate ? new Date(product.lastSoldDate).toLocaleDateString('vi-VN') : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ 
+                        color: product.status === 'In Stock' ? 'success.main' : 'error.main', 
+                        fontWeight: 600,
+                        fontSize: 13
+                      }}>
+                        {product.status === 'In Stock' ? 'Còn hàng' : 'Hết hàng'}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography variant="body2" color="text.secondary">
+                      Không có dữ liệu sản phẩm bán chạy
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
