@@ -710,6 +710,46 @@ const seedData = async () => {
       const user = new User(userData);
       await user.save();
     }
+    // Thêm shipper mẫu
+    const sampleShippers = [
+      {
+        username: 'shipper1',
+        email: 'shipper1@delivery.com',
+        password: 'shipper123',
+        fullName: 'Nguyễn Văn A',
+        phone: '0123456789',
+        role: 'shipper',
+        address: '123 Đường ABC, Quận 1, TP.HCM',
+        isActive: true
+      },
+      {
+        username: 'shipper2',
+        email: 'shipper2@delivery.com',
+        password: 'shipper123',
+        fullName: 'Trần Thị B',
+        phone: '0987654321',
+        role: 'shipper',
+        address: '456 Đường XYZ, Quận 2, TP.HCM',
+        isActive: true
+      },
+      {
+        username: 'shipper3',
+        email: 'shipper3@delivery.com',
+        password: 'shipper123',
+        fullName: 'Lê Văn C',
+        phone: '0555666777',
+        role: 'shipper',
+        address: '789 Đường DEF, Quận 3, TP.HCM',
+        isActive: true
+      }
+    ];
+    for (const shipperData of sampleShippers) {
+      const exists = await User.findOne({ $or: [ { username: shipperData.username }, { email: shipperData.email } ] });
+      if (!exists) {
+        const shipper = new User(shipperData);
+        await shipper.save();
+      }
+    }
     const createdUsers = await User.find({});
     console.log(`Created ${createdUsers.length} users`);
 

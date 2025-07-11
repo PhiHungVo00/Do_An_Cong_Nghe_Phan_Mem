@@ -28,6 +28,7 @@ interface Order {
   totalAmount: number;
   status: string;
   paymentStatus: string;
+  paymentMethod: string; // Thêm dòng này
   shippingAddress: string;
   items?: Array<{
     productId: string;
@@ -107,6 +108,7 @@ const Orders: React.FC = () => {
         totalAmount: order.totalAmount,
         status: order.status,
         paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod, // Thêm dòng này
         shippingAddress: order.shippingAddress,
         items: order.items,
         createdAt: order.createdAt,
@@ -189,7 +191,7 @@ const Orders: React.FC = () => {
             variant="outlined"
             color="success"
             onClick={() => handleConfirmOrder(params.row.id)}
-            disabled={params.row.status === 'Đã hoàn thành' || isActionLoading}
+            disabled={params.row.status !== 'Đang xử lý' || isActionLoading}
             sx={{ minWidth: 'auto', px: 1 }}
           >
             Xác nhận
@@ -310,11 +312,23 @@ const Orders: React.FC = () => {
 
       const order = orders.find(o => o.id === id);
       if (!order) return;
-
+      // Chỉ xác nhận nếu đơn đang ở trạng thái 'Đang xử lý'
+      if (order.status !== 'Đang xử lý') {
+        setError('Chỉ có thể xác nhận đơn ở trạng thái Đang xử lý');
+        setIsActionLoading(false);
+        return;
+      }
+      // Xác định trạng thái thanh toán theo phương thức
+      let paymentStatus = order.paymentStatus;
+      if (order.paymentMethod === 'COD') {
+        paymentStatus = 'Chờ thanh toán';
+      } else if (order.paymentMethod === 'Chuyển khoản') {
+        paymentStatus = 'Đã thanh toán';
+      }
       await axios.put(`http://localhost:5000/api/orders/${id}`, {
         ...order,
         status: 'Đã hoàn thành',
-        paymentStatus: 'Đã thanh toán'
+        paymentStatus
       }, {
         headers: {
           Authorization: `Bearer ${token}`,

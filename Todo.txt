@@ -6,4 +6,4 @@ Hoàn thành phần setting  (Xong)
 Sửa lại email xác thực khi đăng kí (Xong)
 Sửa lại lỗi không hiển thị thông tin người dùng (Xong)
 Sửa lại một số chỗ giao diện cho đẹp hơn (Xong)
-Thêm phần shipper, cập nhật trạng thái đơn hàng khi giao hoàn thành 
+Thêm phần shipper, cập nhật trạng thái đơn hàng khi giao hoàn thành (Xong)

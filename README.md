@@ -2,10 +2,11 @@
 
 ## 📋 Tổng quan
 
-Hệ thống quản lý bán hàng toàn diện với 3 thành phần chính:
+Hệ thống quản lý bán hàng toàn diện với 4 thành phần chính:
 - **Backend API** (Node.js + MongoDB)
-- **Frontend User** (React + TypeScript) 
+- **Frontend User** (React + TypeScript)
 - **Frontend Admin** (React + TypeScript)
+- **Frontend Shipper** (React + TypeScript)
 
 ## 🚀 Tính năng chính
 
@@ -33,6 +34,11 @@ Hệ thống quản lý bán hàng toàn diện với 3 thành phần chính:
 - Chat support
 - Order history
 
+### 📦 Quản lý giao vận (Shipper)
+- Xem, nhận, giao đơn hàng
+- Theo dõi trạng thái đơn
+- Lịch sử giao hàng
+
 ### 📊 Dashboard Admin
 - Analytics dashboard
 - Sales reports
@@ -44,29 +50,64 @@ Hệ thống quản lý bán hàng toàn diện với 3 thành phần chính:
 
 ```
 Do_An_Cong_Nghe_Phan_Mem/
-├── server/                 # Backend API
+├── server/                 # Backend API (Node.js, Express, MongoDB)
 │   ├── src/
-│   │   ├── models/        # MongoDB models
-│   │   ├── routes/        # API routes
-│   │   ├── middleware/    # Auth middleware
-│   │   └── scripts/       # Database scripts
-│   └── package.json
-├── user/                   # Frontend User
+│   │   ├── models/        # MongoDB models (Order, User, Product...)
+│   │   ├── routes/        # API routes (auth, orders, products...)
+│   │   ├── middleware/    # Auth, error handling middleware
+│   │   ├── services/      # Business logic, helpers
+│   │   ├── assets/        # Ảnh mẫu, dữ liệu tĩnh
+│   │   └── scripts/       # Database scripts, seeders
+│   ├── package.json
+│   └── ...
+├── user/                  # Frontend User (React + TS)
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── pages/         # Page components
-│   │   ├── contexts/      # React contexts
-│   │   └── services/      # API services
-│   └── package.json
-├── admin/                  # Frontend Admin
+│   │   ├── components/    # UI components
+│   │   ├── pages/         # Trang chính (Home, Product, Cart...)
+│   │   ├── contexts/      # React Contexts
+│   │   ├── services/      # API services
+│   │   ├── assets/        # Ảnh, icon
+│   │   ├── utils/         # Hàm tiện ích
+│   │   ├── data/          # Dữ liệu mẫu
+│   │   ├── layouts/       # Layouts
+│   │   ├── types/         # TypeScript types
+│   │   └── ...
+│   ├── public/
+│   ├── package.json
+│   └── ...
+├── admin/                 # Frontend Admin (React + TS)
 │   ├── src/
-│   │   ├── components/    # Admin components
-│   │   ├── pages/         # Admin pages
-│   │   └── store/         # Redux store
-│   └── package.json
-├── database/              # Database schema & docs
-├── docs/                  # Documentation
-└── README.md
+│   │   ├── components/    # UI components cho admin
+│   │   ├── pages/         # Trang quản trị (Dashboard, Orders...)
+│   │   ├── store/         # Redux store
+│   │   ├── layouts/       # Layouts
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── routes/        # Route config
+│   │   └── ...
+│   ├── public/
+│   ├── package.json
+│   └── ...
+├── shipper/               # Frontend Shipper (React + TS)
+│   ├── src/
+│   │   ├── api/           # API services cho shipper
+│   │   ├── components/    # UI components cho shipper
+│   │   ├── pages/         # Trang shipper (Đơn chờ nhận, Đang giao...)
+│   │   ├── theme.ts       # Giao diện MUI
+│   │   └── ...
+│   ├── public/
+│   ├── package.json
+│   └── ...
+├── database/              # Database schema & sample data
+│   ├── schema.sql         # SQL schema (tham khảo)
+│   ├── sample_data.sql    # Dữ liệu mẫu
+│   └── docs/              # ERD, mô tả DB
+├── docs/                  # Documentation chi tiết
+│   ├── INDEX.md           # Mục lục docs
+│   ├── ...
+├── .gitignore             # Ignore chung toàn dự án
+├── README.md              # Hướng dẫn tổng thể
+├── package.json           # Quản lý workspace
+└── ...
 ```
 
 ## 🚀 Khởi động nhanh
@@ -81,13 +122,17 @@ cd user && npm install
 
 # Admin Frontend
 cd admin && npm install
+
+# Shipper Frontend
+cd shipper && npm install
 ```
 
 ### 2. Cấu hình môi trường
 ```bash
-# Tạo file .env trong thư mục user/
-echo "REACT_APP_GOOGLE_MAPS_API_KEY=your_api_key" > user/.env
-echo "REACT_APP_API_URL=http://localhost:5000/api" >> user/.env
+# Tạo file .env cho từng module nếu cần
+# Ví dụ cho user:
+echo "REACT_APP_API_URL=http://localhost:5000/api" > user/.env
+# Tương tự cho admin, shipper nếu dùng biến môi trường riêng
 ```
 
 ### 3. Khởi động hệ thống
@@ -99,111 +144,28 @@ START_SYSTEM.bat
 cd server && npm run dev
 cd user && npm start
 cd admin && npm start
+cd shipper && npm start
 ```
 
 ## 📚 Documentation
 
-### 📖 Hướng dẫn chi tiết
-- [📚 Documentation Index](docs/INDEX.md) - Tổng hợp tất cả documentation
-- [📋 Tổng quan dự án](docs/README.md) - Kiến trúc và API documentation
-- [🗺️ Tính năng địa chỉ](docs/ADDRESS_FEATURE.md) - Hệ thống địa chỉ thông minh
-- [🔧 Cấu hình Google Maps](docs/GOOGLE_MAPS_SETUP.md) - Setup Google Maps API
-- [🧪 Test hệ thống](docs/TEST_ADDRESS_SYSTEM.md) - Hướng dẫn test
-- [🐛 Khắc phục lỗi](docs/GOOGLE_MAPS_TROUBLESHOOTING.md) - Troubleshooting
-
-### 🛠️ API Documentation
-- **Base URL**: `http://localhost:5000/api`
-- **Authentication**: JWT Token
-- **Database**: MongoDB
-
-### 📊 Database Schema
-- Users, Products, Orders, Customers
-- Reviews, Sales Events, Challenges
-- Address system với phân cấp hành chính
-
-## 🎯 Tính năng nổi bật
-
-### 🗺️ Hệ thống địa chỉ tiên tiến
-- ✅ Dữ liệu 63 tỉnh/thành Việt Nam
-- ✅ Cascading dropdown filters
-- ✅ Google Maps integration
-- ✅ GPS location support
-- ✅ Address parsing tự động
-
-### 🎮 Gamification
-- ✅ Challenges và rewards
-- ✅ Live events streaming
-- ✅ Customer engagement
-- ✅ Loyalty programs
-
-### 📱 Responsive Design
-- ✅ Mobile-first approach
-- ✅ Progressive Web App
-- ✅ Cross-platform support
-- ✅ Modern UI/UX
+- [docs/INDEX.md](docs/INDEX.md) - Tổng hợp tài liệu, hướng dẫn, troubleshooting, API, database...
 
 ## 🔧 Công nghệ sử dụng
 
 ### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB
-- **Authentication**: JWT
-- **File Upload**: Multer
+- Node.js, Express.js, MongoDB, JWT, Multer
 
 ### Frontend
-- **Framework**: React 18
-- **Language**: TypeScript
-- **UI Library**: Material-UI
-- **State Management**: Redux Toolkit
-- **Maps**: Google Maps API
+- React 18, TypeScript, Material-UI, Redux Toolkit, Google Maps API
 
-### Development
-- **Package Manager**: npm
-- **Build Tool**: Create React App
-- **Code Quality**: ESLint, Prettier
-- **Version Control**: Git
-
-## 🚀 Deployment
-
-### Development
-```bash
-# Backend
-cd server && npm run dev
-
-# User Frontend
-cd user && npm start
-
-# Admin Frontend  
-cd admin && npm start
-```
-
-### Production
-```bash
-# Build frontend
-cd user && npm run build
-cd admin && npm run build
-
-# Deploy backend
-cd server && npm start
-```
+### Dev & Deploy
+- npm, Create React App, ESLint, Prettier, Git
 
 ## 📞 Support
-
-### 🔧 Troubleshooting
-- [Khắc phục lỗi Google Maps](docs/GOOGLE_MAPS_TROUBLESHOOTING.md)
-- [Test hệ thống](docs/TEST_ADDRESS_SYSTEM.md)
-- [Cấu hình môi trường](docs/GOOGLE_MAPS_SETUP.md)
-
-### 📧 Contact
 - **Email**: support@example.com
 - **Documentation**: [docs/](docs/)
 - **Issues**: GitHub Issues
 
-## 📄 License
-
-MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
-
 ---
-
 **Made with ❤️ by Development Team** 

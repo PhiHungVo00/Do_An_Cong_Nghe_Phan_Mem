@@ -5,10 +5,19 @@ const { auth, adminAuth } = require('../middleware/auth');
 const { updateProductInventory } = require('../services/productUpdateService');
 const { autoAddCustomerFromOrder, updateCustomerFromOrderStatus } = require('../services/customerAutoService');
 
+// Middleware xác thực shipper (giả sử role='shipper')
+const shipperAuth = async (req, res, next) => {
+  if (!req.user || req.user.role !== 'shipper') {
+    return res.status(403).json({ message: 'Chỉ dành cho shipper' });
+  }
+  next();
+};
+
 // User routes (authentication required)
 // Get user's own orders
 router.get('/user', auth, async (req, res) => {
   try {
+    // Luôn lấy trạng thái mới nhất từ DB
     const orders = await Order.find({ customer: req.user.email })
       .sort({ createdAt: -1 });
     res.json(orders);
@@ -104,6 +113,7 @@ router.get('/', auth, adminAuth, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Luôn lấy trạng thái mới nhất từ DB
     const orders = await Order.find()
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -172,7 +182,7 @@ router.post('/', auth, adminAuth, async (req, res) => {
 // Update order
 router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
-    const { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress, items } = req.body;
+    let { orderNumber, customer, date, totalAmount, status, paymentStatus, shippingAddress, items } = req.body;
     const orderId = req.params.id;
 
     // Check if order number exists for other orders
@@ -186,6 +196,12 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
       updateData.items = items;
     }
 
+    // Nếu admin xác nhận đơn hàng, tự động chuyển sang 'Chờ nhận giao'
+    if (status === 'Đã hoàn thành' || status === 'Đã xác nhận' || status === 'Đã gửi hàng') {
+      updateData.status = 'Chờ nhận giao';
+      updateData.shipper = null;
+    }
+
     const order = await Order.findByIdAndUpdate(
       orderId,
       updateData,
@@ -196,24 +212,11 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
     }
 
-    // Cập nhật thông tin sản phẩm khi trạng thái đơn hàng thay đổi
-    if (status && order.items && order.items.length > 0) {
-      try {
-        await updateProductInventory(order.items, status);
-      } catch (error) {
-        console.error('Lỗi khi cập nhật thông tin sản phẩm:', error);
-        // Không throw error để không ảnh hưởng đến việc cập nhật đơn hàng
-      }
-    }
-
-    // Cập nhật thông tin khách hàng khi trạng thái đơn hàng thay đổi
-    if (status) {
-      try {
-        await updateCustomerFromOrderStatus(orderId, status);
-      } catch (error) {
-        console.error('Lỗi khi cập nhật thông tin khách hàng:', error);
-        // Không throw error để không ảnh hưởng đến việc cập nhật đơn hàng
-      }
+    // Cập nhật thông tin khách hàng khi thay đổi trạng thái đơn hàng
+    try {
+      await updateCustomerFromOrderStatus(order, status);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật thông tin khách hàng:', error);
     }
 
     res.json(order);
@@ -240,8 +243,8 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Clear all orders
-router.delete('/clear-all', auth, adminAuth, async (req, res) => {
+// Clear all orders (admin only)
+router.delete('/', auth, adminAuth, async (req, res) => {
   try {
     const result = await Order.deleteMany({});
     res.json({ 
@@ -251,6 +254,178 @@ router.delete('/clear-all', auth, adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Error clearing orders:', error);
     res.status(500).json({ message: 'Lỗi server khi xóa tất cả đơn hàng' });
+  }
+});
+
+// Shipper routes
+// 1. Lấy danh sách đơn 'Chờ nhận giao'
+router.get('/shipper/available', auth, shipperAuth, async (req, res) => {
+  try {
+    const orders = await Order.find({ status: 'Chờ nhận giao' }).sort({ createdAt: -1 });
+    const formattedOrders = orders.map(order => ({
+      ...order.toObject(),
+      customer: {
+        name: order.customer.split('|')[0] || '',
+        phone: order.customer.split('|')[1] || '',
+        address: order.shippingAddress || ''
+      },
+      items: order.items.map(item => ({
+        name: item.productName,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      createdAt: order.createdAt || order.date || null
+    }));
+    res.json({ orders: formattedOrders });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi lấy đơn chờ nhận giao' });
+  }
+});
+
+// 2. Lấy danh sách đơn shipper đang giao hoặc đã giao
+router.get('/shipper/assigned', auth, shipperAuth, async (req, res) => {
+  try {
+    const orders = await Order.find({ 
+      shipper: req.user.email, 
+      status: { $in: ['Đang giao hàng', 'Đã giao hàng', 'Đã hoàn thành'] } 
+    }).sort({ createdAt: -1 });
+    const formattedOrders = orders.map(order => ({
+      ...order.toObject(),
+      customer: {
+        name: order.customer.split('|')[0] || '',
+        phone: order.customer.split('|')[1] || '',
+        address: order.shippingAddress || ''
+      },
+      items: order.items.map(item => ({
+        name: item.productName,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      createdAt: order.createdAt || order.date || null
+    }));
+    res.json({ orders: formattedOrders });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi lấy đơn của shipper' });
+  }
+});
+
+// 3. Shipper nhận đơn
+router.post('/shipper/accept/:id', auth, shipperAuth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ 
+      _id: req.params.id, 
+      status: 'Chờ nhận giao', 
+      shipper: null 
+    });
+    if (!order) {
+      return res.status(404).json({ message: 'Đơn không hợp lệ hoặc đã có shipper khác nhận' });
+    }
+    order.shipper = req.user.email;
+    order.status = 'Đang giao hàng';
+    await order.save();
+    res.json({ message: 'Nhận đơn thành công', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi nhận đơn' });
+  }
+});
+
+// 4. Shipper từ chối đơn
+router.post('/shipper/reject/:id', auth, shipperAuth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ 
+      _id: req.params.id, 
+      shipper: req.user.email, 
+      status: 'Đang giao hàng' 
+    });
+    if (!order) {
+      return res.status(404).json({ message: 'Đơn không hợp lệ hoặc không thuộc quyền shipper' });
+    }
+    order.shipper = null;
+    order.status = 'Chờ nhận giao';
+    await order.save();
+    res.json({ message: 'Đã từ chối đơn, đơn quay lại trạng thái chờ nhận giao', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi từ chối đơn' });
+  }
+});
+
+// 5. Shipper xác nhận đã giao hàng
+router.post('/shipper/delivered/:id', auth, shipperAuth, async (req, res) => {
+  try {
+    const order = await Order.findOne({ 
+      _id: req.params.id, 
+      shipper: req.user.email, 
+      status: 'Đang giao hàng' 
+    });
+    if (!order) {
+      return res.status(404).json({ message: 'Đơn không hợp lệ hoặc không thuộc quyền shipper' });
+    }
+    order.status = 'Đã giao hàng';
+    order.deliveryStatus = 'delivered';
+    order.deliveredAt = new Date();
+    if (order.paymentMethod === 'COD') {
+      order.paymentStatus = 'Đã thanh toán';
+    }
+    await order.save();
+    res.json({ message: 'Đã xác nhận giao hàng thành công', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi xác nhận giao hàng' });
+  }
+});
+
+// 6. Shipper cập nhật trạng thái giao hàng
+router.put('/shipper/status/:id', auth, shipperAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findOne({ 
+      _id: req.params.id, 
+      shipper: req.user.email 
+    });
+    if (!order) {
+      return res.status(404).json({ message: 'Đơn không hợp lệ hoặc không thuộc quyền shipper' });
+    }
+    // Nếu là trạng thái chi tiết, cập nhật deliveryStatus
+    if (['picked_up', 'in_transit', 'delivered'].includes(status)) {
+      order.deliveryStatus = status;
+      // Nếu là delivered, cập nhật luôn status tổng thể
+      if (status === 'delivered') {
+        order.status = 'Đã giao hàng';
+      }
+    } else {
+      order.status = status;
+    }
+    await order.save();
+    res.json({ message: 'Cập nhật trạng thái thành công', order });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi cập nhật trạng thái' });
+  }
+});
+
+// 7. Lấy danh sách đơn đã giao
+router.get('/shipper/delivered', auth, shipperAuth, async (req, res) => {
+  try {
+    const orders = await Order.find({ 
+      shipper: req.user.email, 
+      status: 'Đã giao hàng' 
+    }).sort({ createdAt: -1 });
+    const formattedOrders = orders.map(order => ({
+      ...order.toObject(),
+      customer: {
+        name: order.customer.split('|')[0] || '',
+        phone: order.customer.split('|')[1] || '',
+        address: order.shippingAddress || ''
+      },
+      items: order.items.map(item => ({
+        name: item.productName,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      createdAt: order.createdAt || order.date || null,
+      deliveredAt: order.deliveredAt || null
+    }));
+    res.json({ orders: formattedOrders });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi lấy đơn đã giao' });
   }
 });
 

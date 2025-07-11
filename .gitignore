@@ -3,6 +3,7 @@
 admin/node_modules/
 server/node_modules/
 user/node_modules/
+shipper/node_modules/
 
 # production build
 /dist
@@ -27,6 +28,7 @@ user/build/
 .env.production
 server/.env
 admin/.env
+user/.env
 
 # logs
 npm-debug.log*

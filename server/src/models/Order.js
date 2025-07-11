@@ -57,7 +57,7 @@ const orderSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['Đang xử lý', 'Đã hoàn thành', 'Đã hủy', 'Đã gửi hàng', 'Đã giao hàng'],
+    enum: ['Đang xử lý', 'Đã hoàn thành', 'Đã hủy', 'Đã gửi hàng', 'Đã giao hàng', 'Đang giao hàng', 'Chờ nhận giao'],
     default: 'Đang xử lý'
   },
   paymentStatus: {
@@ -76,6 +76,20 @@ const orderSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  shipper: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  deliveryStatus: {
+    type: String,
+    enum: ['picked_up', 'in_transit', 'delivered', null],
+    default: null
+  },
+  deliveredAt: {
+    type: Date,
+    default: null
+  },
   items: [orderItemSchema]
 }, {
   timestamps: true
@@ -91,7 +105,9 @@ orderSchema.virtual('statusVi').get(function() {
     'Đã hoàn thành': 'Đã hoàn thành',
     'Đã hủy': 'Đã hủy',
     'Đã gửi hàng': 'Đã gửi hàng',
-    'Đã giao hàng': 'Đã giao hàng'
+    'Đã giao hàng': 'Đã giao hàng',
+    'Đang giao hàng': 'Đang giao hàng',
+    'Chờ nhận giao': 'Chờ nhận giao'
   };
   return statusMap[this.status] || this.status;
 });
@@ -107,6 +123,33 @@ orderSchema.virtual('paymentStatusVi').get(function() {
   return statusMap[this.paymentStatus] || this.paymentStatus;
 });
 
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+module.exports = mongoose.model('Order', orderSchema); 
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+module.exports = mongoose.model('Order', orderSchema); 
+
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+module.exports = mongoose.model('Order', orderSchema); 
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+module.exports = mongoose.model('Order', orderSchema); 
+
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
+module.exports = mongoose.model('Order', orderSchema); 
 // Ensure virtual fields are serialized
 orderSchema.set('toJSON', { virtuals: true });
 orderSchema.set('toObject', { virtuals: true });
