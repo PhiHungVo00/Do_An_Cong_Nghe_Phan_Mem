@@ -45,3 +45,10 @@ mongorestore --uri "$MONGODB_URI" backups/
 - Passwords are hashed using `bcryptjs` before storing.
 - JWT tokens are signed with `JWT_SECRET` and should be kept private.
 - Limit database access to trusted hosts and use strong credentials.
+
+## New Features
+
+- **Addresses table**: stores provinces, districts and wards for the address selection feature.
+- **Order shipping info**: orders now track `shipper`, `delivery_status` and `delivered_at`.
+
+Seed data for these additions can be found in `sample_data.sql`.

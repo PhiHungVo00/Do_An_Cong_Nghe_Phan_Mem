@@ -4,7 +4,8 @@ digraph ERD {
   Users [label="{Users|+id: SERIAL PK\l+username: VARCHAR\l+email: VARCHAR\l+password: VARCHAR\l+role: VARCHAR}"];
   Products [label="{Products|+id: SERIAL PK\l+name: VARCHAR\l+price: NUMERIC\l+stock: INT}"];
   Customers [label="{Customers|+id: SERIAL PK\l+name: VARCHAR\l+email: VARCHAR}"];
-  Orders [label="{Orders|+id: SERIAL PK\l+order_number: VARCHAR\l+customer_id: FK\l+total_amount: NUMERIC}"];
+  Orders [label="{Orders|+id: SERIAL PK\l+order_number: VARCHAR\l+customer_id: FK\l+shipper: VARCHAR\l+total_amount: NUMERIC}"];
+  Addresses [label="{Addresses|+code: PK\l+name: VARCHAR\l+level: INT\l+parent_code: FK}"];
   OrderItems [label="{OrderItems|+order_id: FK\l+product_id: FK\l+quantity: INT}"];
   Reviews [label="{Reviews|+id: SERIAL PK\l+product_id: FK\l+user_id: FK\l+rating: INT}"];
   SalesEvents [label="{SalesEvents|+id: SERIAL PK\l+title: VARCHAR}"];
@@ -21,6 +22,7 @@ digraph ERD {
   Users -> Reviews [label="1..*", arrowhead=crow];
   Users -> Messages [label="1..*", arrowhead=crow];
   Users -> Messages [label="1..*", dir=back];
+  Addresses -> Addresses [label="1", dir=back, arrowhead=crow];
   SalesEvents -> SalesEventProducts [label="1..*", arrowhead=crow];
   Products -> SalesEventProducts [label="1..*", arrowhead=crow];
   Users -> Challenges [label="1..*", arrowhead=crow];
