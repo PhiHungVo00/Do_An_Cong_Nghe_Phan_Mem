@@ -49,6 +49,8 @@ mongorestore --uri "$MONGODB_URI" backups/
 ## New Features
 
 - **Addresses table**: stores provinces, districts and wards for the address selection feature.
-- **Order shipping info**: orders now track `shipper`, `delivery_status` and `delivered_at`.
+- **Users table**: new `email_verified` flag for registration confirmation.
+- **Customers table**: links to `users` via `user_id`.
+- **Orders table**: keeps detailed shipping location codes (province, district, ward) and the `shipper` fields.
 
 Seed data for these additions can be found in `sample_data.sql`.
