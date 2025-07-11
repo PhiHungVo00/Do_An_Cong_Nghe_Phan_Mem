@@ -9,6 +9,7 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'user',
     full_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    email_verified BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -43,6 +44,7 @@ CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
+    user_id INTEGER REFERENCES users(id),
     phone VARCHAR(20) NOT NULL,
     address VARCHAR(255) NOT NULL,
     type VARCHAR(20) DEFAULT 'retail',
@@ -65,7 +67,13 @@ CREATE TABLE orders (
     status VARCHAR(50) DEFAULT 'Đang xử lý',
     payment_status VARCHAR(50) DEFAULT 'Chờ thanh toán',
     payment_method VARCHAR(50) NOT NULL,
-    shipping_address VARCHAR(255) NOT NULL,
+    shipping_detail VARCHAR(255) NOT NULL,
+    shipping_province_code VARCHAR(10) REFERENCES addresses(code),
+    shipping_district_code VARCHAR(10) REFERENCES addresses(code),
+    shipping_ward_code VARCHAR(10) REFERENCES addresses(code),
+    shipper VARCHAR(100),
+    delivery_status VARCHAR(50),
+    delivered_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -161,6 +169,21 @@ CREATE TABLE employees (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Address hierarchy (provinces/districts/wards)
+CREATE TABLE addresses (
+    code VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    level INTEGER NOT NULL CHECK (level IN (1,2,3)),
+    parent_code VARCHAR(10) REFERENCES addresses(code),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_addresses_parent ON addresses(parent_code);
+CREATE INDEX idx_addresses_level ON addresses(level);
+
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     from_user INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -213,3 +236,6 @@ FOR EACH ROW EXECUTE FUNCTION trg_reduce_stock();
 CREATE INDEX idx_products_name ON products USING gin (to_tsvector('simple', name));
 CREATE INDEX idx_customers_email ON customers(email);
 CREATE INDEX idx_orders_customer_date ON orders(customer_id, date DESC);
+CREATE INDEX idx_orders_shipper ON orders(shipper);
+CREATE INDEX idx_orders_address ON orders(shipping_province_code, shipping_district_code, shipping_ward_code);
+
